@@ -36,12 +36,8 @@ type Handler struct {
 	RDB *redis.Client
 }
 
-func currentUser(db *gorm.DB, c *gin.Context) (uint, string) {
-	uid, role := auth.LookupUser(db, c.GetString("username"))
-	if uid == 0 {
-		return 0, auth.NormalizeRole(c.GetString("role"))
-	}
-	return uid, role
+func currentUser(c *gin.Context) (uint, string) {
+	return auth.UserFromContext(c)
 }
 
 func writeErr(c *gin.Context, err error) {
@@ -182,14 +178,12 @@ func (h *Handler) GetDetail(c *gin.Context) {
 		c.JSON(403, gin.H{"error": "curso no publicado"})
 		return
 	}
-	username, role, err := auth.ResolveSessionTokenWithRole(token, h.RDB)
+	_, role, userID, err := auth.ResolveSessionTokenWithRole(token, h.RDB)
 	if err != nil {
 		c.JSON(401, gin.H{"error": "token inválido"})
 		return
 	}
-	var u auth.UserModel
-	h.DB.Where("username = ?", username).First(&u)
-	if !IsOwnerOrAdmin(course, u.ID, role) {
+	if !IsOwnerOrAdmin(course, userID, role) {
 		c.JSON(403, gin.H{"error": "curso no publicado"})
 		return
 	}
@@ -216,7 +210,7 @@ func (h *Handler) Create(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "título requerido"})
 		return
 	}
-	uid, _ := currentUser(h.DB, c)
+	uid, _ := currentUser(c)
 	course, version, err := CreateCourse(h.DB, uid, req.Title, req.Slug, req.Description, req.ThumbnailKey, req.MinRequiredPct)
 	if err != nil {
 		writeErr(c, err)
@@ -245,7 +239,7 @@ func (h *Handler) Update(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	var req UpdateCourseRequest
 	_ = c.ShouldBindJSON(&req)
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	course, err := UpdateCourseMeta(h.DB, uint(id), uid, role, req.Title, req.Description, req.ThumbnailKey)
 	if err != nil {
 		writeErr(c, err)
@@ -269,7 +263,7 @@ func (h *Handler) Update(c *gin.Context) {
 //	@Router			/api/v1/courses/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	assets, err := DeleteCourse(h.DB, uint(id), uid, role)
 	if err != nil {
 		writeErr(c, err)
@@ -321,7 +315,7 @@ func (h *Handler) Validate(c *gin.Context) {
 //	@Router			/api/v1/courses/{id}/publish [post]
 func (h *Handler) Publish(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	v, err := PublishVersion(h.DB, uint(id), uid, role)
 	if err != nil {
 		writeErr(c, err)
@@ -345,7 +339,7 @@ func (h *Handler) Publish(c *gin.Context) {
 //	@Router			/api/v1/courses/{id}/unpublish [post]
 func (h *Handler) Unpublish(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	course, err := UnpublishCourse(h.DB, uint(id), uid, role)
 	if err != nil {
 		writeErr(c, err)
@@ -370,7 +364,7 @@ func (h *Handler) Unpublish(c *gin.Context) {
 //	@Router			/api/v1/courses/{id}/versions [post]
 func (h *Handler) NewVersion(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	v, err := NewDraftVersion(h.DB, uint(id), uid, role)
 	if err != nil {
 		writeErr(c, err)
@@ -402,7 +396,7 @@ func (h *Handler) AddModule(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "título requerido"})
 		return
 	}
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	m, err := AddModule(h.DB, uint(id), uid, role, req.Title, req.Description)
 	if err != nil {
 		writeErr(c, err)
@@ -433,7 +427,7 @@ func (h *Handler) ReorderModules(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "ordered_ids requerido"})
 		return
 	}
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	if err := ReorderModules(h.DB, uint(id), uid, role, req.OrderedIDs); err != nil {
 		writeErr(c, err)
 		return
@@ -464,7 +458,7 @@ func (h *Handler) AddUnit(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "título requerido"})
 		return
 	}
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	u, err := AddUnit(h.DB, uint(id), uid, role, req.Title, req.Description)
 	if err != nil {
 		writeErr(c, err)
@@ -495,7 +489,7 @@ func (h *Handler) ReorderUnits(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "ordered_ids requerido"})
 		return
 	}
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	if err := ReorderUnits(h.DB, uint(id), uid, role, req.OrderedIDs); err != nil {
 		writeErr(c, err)
 		return
@@ -526,7 +520,7 @@ func (h *Handler) AddResource(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "datos inválidos"})
 		return
 	}
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	r, err := AddResource(h.DB, uint(id), uid, role, req)
 	if err != nil {
 		writeErr(c, err)
@@ -557,7 +551,7 @@ func (h *Handler) ReorderResources(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "ordered_ids requerido"})
 		return
 	}
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	if err := ReorderResources(h.DB, uint(id), uid, role, req.OrderedIDs); err != nil {
 		writeErr(c, err)
 		return
@@ -588,7 +582,7 @@ func (h *Handler) UpdateResource(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "datos inválidos"})
 		return
 	}
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	r, err := UpdateResource(h.DB, uint(id), uid, role, req)
 	if err != nil {
 		writeErr(c, err)
@@ -614,7 +608,7 @@ func (h *Handler) UpdateResource(c *gin.Context) {
 //	@Router			/api/v1/resources/{id} [delete]
 func (h *Handler) DeleteResource(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	r, err := DeleteResource(h.DB, uint(id), uid, role)
 	if err != nil {
 		writeErr(c, err)
@@ -713,7 +707,7 @@ func (h *Handler) UploadURL(c *gin.Context) {
 // puertas de entrada al mismo contenido y mantener la regla en un solo sitio
 // evita que con el tiempo una deje pasar lo que la otra rechaza.
 func (h *Handler) autorizaRecurso(c *gin.Context, r *Resource, course *Course) bool {
-	uid, role := currentUser(h.DB, c)
+	uid, role := currentUser(c)
 	if IsOwnerOrAdmin(course, uid, role) {
 		return true
 	}

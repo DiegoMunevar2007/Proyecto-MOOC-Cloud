@@ -41,6 +41,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("worker: no se pudo conectar a Postgres: %v", err)
 	}
+	// Tope bajo: el worker compite por las mismas 25 conexiones de Cloud SQL que
+	// la API y solo necesita una por trabajo concurrente en vuelo.
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("worker: no se pudo obtener el pool de Postgres: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(4)
+	sqlDB.SetMaxIdleConns(4)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	// AutoMigrate compartido con la API (misma fuente de verdad).
 	if err := db.AutoMigrate(
 		&courses.Course{},

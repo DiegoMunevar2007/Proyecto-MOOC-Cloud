@@ -39,7 +39,7 @@ func SetupEnrollRoutes(router *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) 
 }
 
 func studentOf(h *Handler, c *gin.Context) uint {
-	uid, _ := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, _ := auth.UserFromContext(c)
 	return uid
 }
 
@@ -93,7 +93,7 @@ func (h *Handler) CourseEnrollments(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "no encontrado"})
 		return
 	}
-	uid, role := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, role := auth.UserFromContext(c)
 	if !courses.IsOwnerOrAdmin(&course, uid, role) {
 		c.JSON(403, gin.H{"error": "sin permiso"})
 		return

@@ -49,7 +49,7 @@ func toResponse(b *Badge) BadgeResponse {
 //	@Success		200	{object}	MyBadgesResponse	"Insignias"
 //	@Router			/api/v1/badges [get]
 func (h *Handler) Mine(c *gin.Context) {
-	uid, _ := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, _ := auth.UserFromContext(c)
 	items, err := Mine(h.DB, uid)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})

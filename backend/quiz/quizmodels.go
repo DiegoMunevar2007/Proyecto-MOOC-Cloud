@@ -45,8 +45,8 @@ type Attempt struct {
 	ID             uint       `gorm:"primaryKey" json:"id"`
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
-	QuizID         uint       `gorm:"not null;index" json:"quiz_id"`
-	StudentID      uint       `gorm:"not null;index" json:"student_id"`
+	QuizID         uint       `gorm:"not null;index:idx_attempt_quiz_student" json:"quiz_id"`
+	StudentID      uint       `gorm:"not null;index:idx_attempt_quiz_student" json:"student_id"`
 	Snapshot       string     `gorm:"type:text;not null" json:"-"`
 	Answers        string     `gorm:"type:text;not null;default:'{}'" json:"-"`
 	Status         string     `gorm:"not null;default:'draft';index" json:"status"`

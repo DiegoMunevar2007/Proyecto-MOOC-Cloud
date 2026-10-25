@@ -109,7 +109,7 @@ func (h *tusHandler) preCreate(event handler.HookEvent) (handler.HTTPResponse, h
 		return handler.HTTPResponse{}, handler.FileInfoChanges{}, handler.NewError("ERR_UPLOAD_REJECTED", msg, code)
 	}
 	token := strings.TrimSpace(strings.TrimPrefix(event.HTTPRequest.Header.Get("Authorization"), "Bearer "))
-	username, _, err := auth.ResolveSessionTokenWithRole(token, h.RDB)
+	username, role, uid, err := auth.ResolveSessionTokenWithRole(token, h.RDB)
 	if err != nil || username == "" {
 		return deny(401, "sesión inválida")
 	}
@@ -121,7 +121,6 @@ func (h *tusHandler) preCreate(event handler.HookEvent) (handler.HTTPResponse, h
 	if err != nil {
 		return deny(404, "recurso no encontrado")
 	}
-	uid, role := auth.LookupUser(h.DB, username)
 	if !courses.IsOwnerOrAdmin(c, uid, role) {
 		return deny(403, "sin permiso")
 	}

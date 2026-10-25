@@ -107,17 +107,28 @@ func unitChain(db *gorm.DB, unitID uint) (*Unit, *Module, *CourseVersion, *Cours
 	return &u, m, v, c, nil
 }
 
-// LocateResource carga recurso + curso + versión para autorización desde otros dominios.
+// LocateResource carga recurso + curso + versión para autorización desde otros
+// dominios. Una sola consulta resuelve unidad → módulo → versión en lugar de
+// encadenar una búsqueda por id en cada salto.
 func LocateResource(db *gorm.DB, resourceID uint) (*Resource, *Course, *CourseVersion, error) {
 	var r Resource
 	if err := db.First(&r, resourceID).Error; err != nil {
 		return nil, nil, nil, ErrNotFound
 	}
-	_, _, v, c, err := unitChain(db, r.UnitID)
+	var v CourseVersion
+	if err := db.Table("course_versions").
+		Select("course_versions.*").
+		Joins("JOIN modules ON modules.course_version_id = course_versions.id").
+		Joins("JOIN units ON units.module_id = modules.id").
+		Where("units.id = ?", r.UnitID).
+		Take(&v).Error; err != nil {
+		return nil, nil, nil, ErrNotFound
+	}
+	c, err := getCourse(db, v.CourseID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	return &r, c, v, nil
+	return &r, c, &v, nil
 }
 
 // ByStableID retorna el recurso más reciente con ese stable_id.

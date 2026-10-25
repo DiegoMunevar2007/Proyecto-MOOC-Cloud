@@ -126,20 +126,21 @@ func CreateSession(userID uint, db *gorm.DB, rdb *redis.Client) (string, error) 
 	return signedToken, nil
 }
 
-func ResolveSessionTokenWithRole(tokenString string, rdb *redis.Client) (string, string, error) {
+func ResolveSessionTokenWithRole(tokenString string, rdb *redis.Client) (string, string, uint, error) {
 	/*
 		Valida un JWT verificando firma, expiración y existencia en Redis.
-		Si es válido devuelve el username y el rol; en caso contrario retorna error genérico.
-		El rol proviene del claim del JWT (firmado) para que RequireAuth siga siendo solo Redis.
+		Si es válido devuelve el username, el rol y el user_id; en caso contrario
+		retorna error genérico. El rol y el id provienen del claim firmado, así que
+		RequireRole no necesita consultar la base de datos por petición.
 	*/
 	var errInvalid = errors.New("token de sesión inválido o expirado")
 	// 1. Verificar que exista en Redis (no revocado y no expirado por TTL).
 	username, err := rdb.Get(ctx, "session:"+tokenString).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return "", "", errInvalid
+			return "", "", 0, errInvalid
 		}
-		return "", "", errors.New("error al consultar la sesión: " + err.Error())
+		return "", "", 0, errors.New("error al consultar la sesión: " + err.Error())
 	}
 
 	// 2. Verificar firma y expiración del JWT.
@@ -151,15 +152,15 @@ func ResolveSessionTokenWithRole(tokenString string, rdb *redis.Client) (string,
 		return getJWTSecret(), nil
 	})
 	if err != nil || !parsed.Valid {
-		return "", "", errInvalid
+		return "", "", 0, errInvalid
 	}
 
 	// Coherencia opcional: el username del JWT debe coincidir con el de Redis.
 	if claims.Username != "" && claims.Username != username {
-		return "", "", errInvalid
+		return "", "", 0, errInvalid
 	}
 
-	return username, claims.Role, nil
+	return username, claims.Role, claims.UserID, nil
 }
 
 func DeleteSession(tokenString string, rdb *redis.Client) error {

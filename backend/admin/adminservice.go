@@ -270,7 +270,7 @@ func RevokeUserSessions(db *gorm.DB, actor Actor, rdb *redis.Client, userID uint
 
 func RevokeOneSession(db *gorm.DB, actor Actor, rdb *redis.Client, token string) error {
 	// Intentar obtener username del token para auditoría, pero no es crítico
-	username, _, _ := auth.ResolveSessionTokenWithRole(token, rdb)
+	username, _, _, _ := auth.ResolveSessionTokenWithRole(token, rdb)
 	if err := auth.DeleteSession(token, rdb); err != nil {
 		return err
 	}

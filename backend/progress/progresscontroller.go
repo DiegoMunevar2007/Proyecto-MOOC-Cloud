@@ -54,7 +54,7 @@ func (h *Handler) Heartbeat(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "señal inválida"})
 		return
 	}
-	uid, _ := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, _ := auth.UserFromContext(c)
 	p, err := Heartbeat(h.DB, uid, req)
 	if err != nil {
 		switch {
@@ -86,7 +86,7 @@ func (h *Handler) Heartbeat(c *gin.Context) {
 //	@Failure		404	{object}	utils.ErrorResponse	"Sin progreso registrado"
 //	@Router			/api/v1/progress/position/{stable_id} [get]
 func (h *Handler) Position(c *gin.Context) {
-	uid, _ := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, _ := auth.UserFromContext(c)
 	p, err := Position(h.DB, uid, c.Param("stable_id"))
 	if err != nil {
 		if errors.Is(err, courses.ErrForbidden) {
@@ -114,7 +114,7 @@ func (h *Handler) Position(c *gin.Context) {
 //	@Router			/api/v1/progress/{course_id} [get]
 func (h *Handler) Summary(c *gin.Context) {
 	courseID, _ := strconv.ParseUint(c.Param("course_id"), 10, 32)
-	uid, _ := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, _ := auth.UserFromContext(c)
 	s, err := CourseProgress(h.DB, uid, uint(courseID))
 	if err != nil {
 		if errors.Is(err, courses.ErrForbidden) {

@@ -71,7 +71,7 @@ func (h *Handler) Register(c *gin.Context) {
 			c.JSON(403, gin.H{"error": "Se requiere autenticación de administrador para crear un profesor"})
 			return
 		}
-		_, role, err := ResolveSessionTokenWithRole(token, h.RDB)
+		_, role, _, err := ResolveSessionTokenWithRole(token, h.RDB)
 		if err != nil {
 			c.JSON(401, gin.H{"error": "Token de sesión inválido o expirado"})
 			return

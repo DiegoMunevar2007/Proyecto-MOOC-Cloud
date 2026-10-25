@@ -61,7 +61,7 @@ func writeErr(c *gin.Context, err error) {
 }
 
 func studentOf(h *Handler, c *gin.Context) uint {
-	uid, _ := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, _ := auth.UserFromContext(c)
 	return uid
 }
 
@@ -114,7 +114,7 @@ func (h *Handler) Create(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "resource_id requerido"})
 		return
 	}
-	uid, role := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, role := auth.UserFromContext(c)
 	q, err := CreateQuiz(h.DB, uid, role, req.ResourceID, req.AttemptsAllowed, req.TimeLimitSec, req.FeedbackPolicy)
 	if err != nil {
 		writeErr(c, err)
@@ -145,7 +145,7 @@ func (h *Handler) AddQuestions(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "preguntas requeridas"})
 		return
 	}
-	uid, role := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, role := auth.UserFromContext(c)
 	qs, err := AddQuestions(h.DB, uid, role, uint(id), req.Questions)
 	if err != nil {
 		writeErr(c, err)
@@ -169,7 +169,7 @@ func (h *Handler) AddQuestions(c *gin.Context) {
 //	@Router			/api/v1/quizzes/{id} [get]
 func (h *Handler) GetProfessor(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	uid, role := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, role := auth.UserFromContext(c)
 	q, err := authorQuizRead(h.DB, uint(id), uid, role)
 	if err != nil {
 		writeErr(c, err)
@@ -195,7 +195,7 @@ func (h *Handler) GetProfessor(c *gin.Context) {
 //	@Router			/api/v1/quizzes/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	uid, role := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, role := auth.UserFromContext(c)
 	if err := DeleteQuiz(h.DB, uid, role, uint(id)); err != nil {
 		writeErr(c, err)
 		return
@@ -222,7 +222,7 @@ func (h *Handler) ListAttempts(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	uid, role := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, role := auth.UserFromContext(c)
 	items, total, err := ListAttempts(h.DB, uid, role, uint(id), page, limit)
 	if err != nil {
 		writeErr(c, err)
@@ -255,7 +255,7 @@ func (h *Handler) UpdateQuestion(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "pregunta requerida"})
 		return
 	}
-	uid, role := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, role := auth.UserFromContext(c)
 	q, err := UpdateQuestion(h.DB, uid, role, uint(id), uint(qid), req)
 	if err != nil {
 		writeErr(c, err)
@@ -281,7 +281,7 @@ func (h *Handler) UpdateQuestion(c *gin.Context) {
 func (h *Handler) DeleteQuestion(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
 	qid, _ := strconv.ParseUint(c.Param("qid"), 10, 32)
-	uid, role := auth.LookupUser(h.DB, c.GetString("username"))
+	uid, role := auth.UserFromContext(c)
 	if err := DeleteQuestion(h.DB, uid, role, uint(id), uint(qid)); err != nil {
 		writeErr(c, err)
 		return

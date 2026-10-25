@@ -169,6 +169,15 @@ func initPostgresDB() *gorm.DB {
 	if err != nil {
 		panic("No se pudo conectar a la base de datos")
 	}
+	// Cloud SQL db-f1-micro admite 25 conexiones. Sin tope, GORM abre una por
+	// petición concurrente y la API empieza a devolver 500 al pasar de ahí.
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("No se pudo obtener el pool de PostgreSQL")
+	}
+	sqlDB.SetMaxOpenConns(10)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	return db
 }
 

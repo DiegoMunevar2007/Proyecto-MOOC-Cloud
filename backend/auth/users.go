@@ -1,15 +1,13 @@
 package auth
 
 import (
-	"gorm.io/gorm"
+	"github.com/gin-gonic/gin"
 )
 
-// LookupUser resuelve username → (userID, rol fresco de DB).
-// Comparte la consulta que cada dominio necesita tras RequireAuth/RequireRole.
-func LookupUser(db *gorm.DB, username string) (uint, string) {
-	var u UserModel
-	if err := db.Where("username = ?", username).First(&u).Error; err != nil {
-		return 0, ""
-	}
-	return u.ID, u.Role
+// UserFromContext lee el id y el rol que RequireRole dejó en el contexto desde
+// los claims firmados. Evita una consulta a la base de datos por petición.
+func UserFromContext(c *gin.Context) (uint, string) {
+	uid, _ := c.Get("user_id")
+	id, _ := uid.(uint)
+	return id, NormalizeRole(c.GetString("role"))
 }

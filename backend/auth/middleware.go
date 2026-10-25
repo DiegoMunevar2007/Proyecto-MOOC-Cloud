@@ -27,7 +27,7 @@ func RequireRole(rdb *redis.Client, allowedRoles ...string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		username, role, err := ResolveSessionTokenWithRole(token, rdb)
+		username, role, userID, err := ResolveSessionTokenWithRole(token, rdb)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token de sesión inválido o expirado"})
 			c.Abort()
@@ -41,6 +41,7 @@ func RequireRole(rdb *redis.Client, allowedRoles ...string) gin.HandlerFunc {
 		}
 		c.Set("username", username)
 		c.Set("role", normalizedRole)
+		c.Set("user_id", userID)
 		c.Set("session_token", token)
 		c.Next()
 	}

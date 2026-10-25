@@ -132,15 +132,6 @@ func AddQuestions(db *gorm.DB, userID uint, role string, quizID uint, inputs []Q
 	return out, nil
 }
 
-// QuizByResource resuelve el quiz de un recurso (para progreso/aprobación).
-func QuizByResource(db *gorm.DB, resourceID uint) (*Quiz, error) {
-	var q Quiz
-	if err := db.Where("resource_id = ?", resourceID).First(&q).Error; err != nil {
-		return nil, courses.ErrNotFound
-	}
-	return &q, nil
-}
-
 func questionsOf(db *gorm.DB, quizID uint) ([]Question, error) {
 	var qs []Question
 	return qs, db.Where("quiz_id = ?", quizID).Order("position asc").Find(&qs).Error
@@ -287,13 +278,6 @@ func Grade(snap []SnapshotQuestion, answers map[string]int) int {
 		}
 	}
 	return hit * 100 / len(snap)
-}
-
-// Passed indica si el estudiante aprobó el quiz (algún intento enviado ≥ minPct).
-func Passed(db *gorm.DB, studentID, quizID uint, minPct int) bool {
-	var n int64
-	db.Model(&Attempt{}).Where("quiz_id = ? AND student_id = ? AND status = ? AND score >= ?", quizID, studentID, AttemptSubmitted, minPct).Count(&n)
-	return n > 0
 }
 
 // ListAttempts lista intentos del quiz (autoría), página base 1.

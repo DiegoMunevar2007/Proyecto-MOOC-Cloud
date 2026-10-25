@@ -98,44 +98,98 @@ func Position(db *gorm.DB, studentID uint, stableID string) (*Progress, error) {
 	return &p, nil
 }
 
-// CourseProgress calcula el avance sobre recursos obligatorios visibles,
-// actualiza Matricula.Status y emite la insignia al aprobar.
+// progressResource es lo mínimo del árbol que necesita el cálculo de avance.
+type progressResource struct {
+	ID       uint
+	StableID string
+	Type     string
+}
+
+// CourseProgress calcula el avance sobre recursos obligatorios visibles de la
+// versión vigente, actualiza Matricula.Status y emite la insignia al aprobar.
+// Hace un número constante de consultas: recursos, progreso del estudiante e
+// intentos aprobados. Antes recorría el árbol y lanzaba una consulta por
+// recurso más dos por quiz.
 func CourseProgress(db *gorm.DB, studentID, courseID uint) (*CourseProgressResponse, error) {
 	if !enroll.IsEnrolled(db, studentID, courseID) {
 		return nil, courses.ErrForbidden
 	}
-	_, tree, err := courses.GetFullTree(db, courseID)
-	if err != nil {
+	var c courses.Course
+	if err := db.First(&c, courseID).Error; err != nil {
+		return nil, courses.ErrNotFound
+	}
+	var v courses.CourseVersion
+	if c.CurrentVersionID == nil {
+		if err := db.Where("course_id = ?", courseID).Order("number desc").First(&v).Error; err != nil {
+			return nil, courses.ErrNotFound
+		}
+	} else if err := db.First(&v, *c.CurrentVersionID).Error; err != nil {
+		return nil, courses.ErrNotFound
+	}
+
+	var resources []progressResource
+	if err := db.Table("resources").
+		Select("resources.id, resources.stable_id, resources.type").
+		Joins("JOIN units ON units.id = resources.unit_id").
+		Joins("JOIN modules ON modules.id = units.module_id").
+		Where("modules.course_version_id = ? AND resources.is_visible AND resources.is_required", v.ID).
+		Scan(&resources).Error; err != nil {
 		return nil, err
 	}
+
+	stableIDs := make([]string, 0, len(resources))
+	quizIDs := make([]uint, 0, len(resources))
+	for _, r := range resources {
+		stableIDs = append(stableIDs, r.StableID)
+		if courses.NormalizeResourceType(r.Type) == courses.ResourceTypeQuiz {
+			quizIDs = append(quizIDs, r.ID)
+		}
+	}
+
+	positions := map[string]PositionInfo{}
+	completed := map[string]bool{}
+	if len(stableIDs) > 0 {
+		var rows []Progress
+		if err := db.Where("student_id = ? AND stable_id IN ?", studentID, stableIDs).Find(&rows).Error; err != nil {
+			return nil, err
+		}
+		for _, p := range rows {
+			completed[p.StableID] = p.Completed
+			positions[p.StableID] = PositionInfo{PositionSec: p.PositionSec, DurationSec: p.DurationSec, Page: p.Page, Completed: p.Completed}
+		}
+	}
+
+	passedQuizzes := map[uint]bool{}
+	if len(quizIDs) > 0 {
+		var ids []uint
+		if err := db.Table("attempts").
+			Joins("JOIN quizzes ON quizzes.id = attempts.quiz_id").
+			Where("attempts.student_id = ? AND attempts.status = ? AND attempts.score >= ? AND quizzes.resource_id IN ?",
+				studentID, quiz.AttemptSubmitted, v.MinRequiredPct, quizIDs).
+			Group("quizzes.resource_id").
+			Pluck("quizzes.resource_id", &ids).Error; err != nil {
+			return nil, err
+		}
+		for _, id := range ids {
+			passedQuizzes[id] = true
+		}
+	}
+
 	total, done := 0, 0
 	allQuizPassed := true
-	positions := map[string]PositionInfo{}
-	for _, m := range tree.Modules {
-		for _, u := range m.Units {
-			for _, r := range u.Resources {
-				if !r.IsVisible || !r.IsRequired {
-					continue
-				}
-				total++
-				// Los quizzes se completan por aprobación, no por heartbeat.
-				if courses.NormalizeResourceType(r.Type) == courses.ResourceTypeQuiz {
-					q, qerr := quiz.QuizByResource(db, r.ID)
-					if qerr != nil || !quiz.Passed(db, studentID, q.ID, tree.MinRequiredPct) {
-						allQuizPassed = false
-						continue
-					}
-					done++
-					continue
-				}
-				var p Progress
-				if db.Where("student_id = ? AND stable_id = ?", studentID, r.StableID).First(&p).Error == nil {
-					positions[r.StableID] = PositionInfo{PositionSec: p.PositionSec, DurationSec: p.DurationSec, Page: p.Page, Completed: p.Completed}
-					if p.Completed {
-						done++
-					}
-				}
+	for _, r := range resources {
+		total++
+		// Los quizzes se completan por aprobación, no por heartbeat.
+		if courses.NormalizeResourceType(r.Type) == courses.ResourceTypeQuiz {
+			if !passedQuizzes[r.ID] {
+				allQuizPassed = false
+				continue
 			}
+			done++
+			continue
+		}
+		if completed[r.StableID] {
+			done++
 		}
 	}
 	pct := 0
