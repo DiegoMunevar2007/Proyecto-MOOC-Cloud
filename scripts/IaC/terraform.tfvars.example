@@ -6,18 +6,31 @@ project_id = "mi-proyecto-gcp"
 region = "us-central1"
 zone   = "us-central1-a"
 
-name_prefix  = "mooc"
-machine_type = "e2-small"
+name_prefix = "mooc"
 
-repo_url    = "https://github.com/DiegoMunevar2007/Proyecto-1-Cloud.git"
-repo_branch = "main"
+# Etiqueta que imprime scripts/publish_images.sh. Vacía, el plan se detiene
+# antes de crear las plantillas de instancia.
+image_tag = ""
 
-# Vacío usa la IP pública de Web Server (TLS interno). Con dominio propio,
-# Caddy solicita un certificado Let's Encrypt.
+# Certificado del balanceador: "managed" (Google, tarda 15-60 min en quedar
+# ACTIVE) o "self_signed" (inmediato, hay que aceptarlo con curl -k).
+ssl_mode = "managed"
+
+# Vacío usa <IP del balanceador>.sslip.io.
 domain = ""
 
-deploy_frontend   = false
-worker_concurrency = 10
+deploy_frontend = true
+deploy_loadgen  = false
+
+# Autoscaling (1 a 3 instancias por grupo).
+api_min_replicas    = 1
+api_max_replicas    = 3
+worker_min_replicas = 1
+worker_max_replicas = 3
+
+# Concurrencia de cada worker; también es la asignación por instancia del
+# autoscaler de workers. El enunciado exige registrarla en cada corrida.
+worker_concurrency = 4
 
 db_tier         = "db-f1-micro"
 db_disk_size_gb = 20

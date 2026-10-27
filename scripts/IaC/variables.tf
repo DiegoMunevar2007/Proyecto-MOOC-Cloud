@@ -10,7 +10,7 @@ variable "region" {
 }
 
 variable "zone" {
-  description = "Zona de disponibilidad donde se ubican las máquinas virtuales"
+  description = "Zona donde viven los grupos de instancias y la VM de la cola"
   type        = string
   default     = "us-central1-a"
 }
@@ -26,10 +26,51 @@ variable "name_prefix" {
   }
 }
 
-variable "machine_type" {
-  description = "Tipo de máquina de las dos VM (2 vCPU / 2 GiB objetivo)"
+# ---------------------------------------------------------------------------
+# Imágenes
+# ---------------------------------------------------------------------------
+
+variable "image_tag" {
+  description = <<-EOT
+    Etiqueta de las imágenes api, worker y frontend en Artifact Registry. La
+    imprime scripts/publish_images.sh. Las etiquetas son inmutables, así que
+    cambiarla es la única forma de desplegar código nuevo: genera plantillas
+    nuevas y los grupos las aplican con un reemplazo gradual.
+  EOT
+  type        = string
+  default     = ""
+}
+
+# ---------------------------------------------------------------------------
+# Máquinas
+# ---------------------------------------------------------------------------
+
+variable "api_machine_type" {
+  description = "Tipo de máquina de cada instancia del grupo de la API"
   type        = string
   default     = "e2-small"
+}
+
+variable "worker_machine_type" {
+  description = "Tipo de máquina de cada instancia del grupo de workers"
+  type        = string
+  default     = "e2-small"
+}
+
+variable "frontend_machine_type" {
+  description = "Tipo de máquina de la instancia del frontend"
+  type        = string
+  default     = "e2-small"
+}
+
+variable "queue_machine_type" {
+  description = <<-EOT
+    Tipo de máquina de mooc-queue, que corre Redis, ClamAV y Mailpit. ClamAV
+    retiene casi 1 GB con la base de firmas cargada; en una de 2 GiB, junto a
+    Redis, era el proceso que se llevaba el OOM killer en la entrega 2.
+  EOT
+  type        = string
+  default     = "e2-medium"
 }
 
 variable "boot_disk_size_gb" {
@@ -56,59 +97,201 @@ variable "boot_image_project" {
 }
 
 variable "boot_image_family" {
-  description = "Familia de imagen de arranque (incluye Docker y google-cloud-cli)"
+  description = "Familia de imagen de arranque (trae google-cloud-cli; Docker se instala al arrancar)"
   type        = string
   default     = "debian-12"
 }
 
-variable "repo_url" {
-  description = "URL HTTPS del repositorio que se clona en cada VM"
-  type        = string
-  default     = "https://github.com/DiegoMunevar2007/Proyecto-1-Cloud.git"
+# ---------------------------------------------------------------------------
+# Autoscaling
+# ---------------------------------------------------------------------------
+
+variable "api_min_replicas" {
+  description = "Mínimo de instancias del grupo de la API"
+  type        = number
+  default     = 1
 }
 
-variable "repo_branch" {
-  description = "Rama del repositorio a desplegar"
-  type        = string
-  default     = "main"
+variable "api_max_replicas" {
+  description = "Máximo de instancias del grupo de la API"
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.api_max_replicas >= var.api_min_replicas && var.api_min_replicas >= 1
+    error_message = "api_max_replicas debe ser mayor o igual que api_min_replicas, y el mínimo al menos 1."
+  }
 }
 
-variable "app_dir" {
-  description = "Directorio destino del clon en cada VM"
-  type        = string
-  default     = "/opt/mooc"
+variable "api_cpu_target" {
+  description = <<-EOT
+    Utilización de CPU promedio del grupo de la API que el autoscaler intenta
+    sostener. 0.6 deja margen para absorber un pico mientras arranca la
+    instancia nueva, que tarda unos minutos en estar sirviendo.
+  EOT
+  type        = number
+  default     = 0.6
+
+  validation {
+    condition     = var.api_cpu_target > 0 && var.api_cpu_target <= 1
+    error_message = "api_cpu_target es una fracción entre 0 y 1."
+  }
 }
 
-variable "domain" {
-  description = "Dominio para el certificado TLS. Vacío usa la IP pública de Web Server"
-  type        = string
-  default     = ""
+variable "worker_min_replicas" {
+  description = "Mínimo de instancias del grupo de workers"
+  type        = number
+  default     = 1
 }
 
-variable "deploy_frontend" {
-  description = "Desplegar el frontend Next.js existente detrás del proxy inverso"
-  type        = bool
-  default     = false
+variable "worker_max_replicas" {
+  description = "Máximo de instancias del grupo de workers"
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.worker_max_replicas >= var.worker_min_replicas && var.worker_min_replicas >= 1
+    error_message = "worker_max_replicas debe ser mayor o igual que worker_min_replicas, y el mínimo al menos 1."
+  }
 }
 
 variable "worker_concurrency" {
   description = <<-EOT
-    Concurrencia de asynq en Worker Server, es decir cuántos trabajos de media se
-    procesan a la vez. Bajó de 10 a 4 por dimensionamiento, no por gusto: en una
-    VM de 1976 MB, clamd retiene entre 320 y 850 MB de forma permanente con la
-    base de firmas cargada, y cada ffmpeg transcodificando 1080p consume unos
-    102 MB. Diez simultáneos son 1017 MB de ffmpeg y el total llega a 2297 MB
-    contra 1976 disponibles: el OOM killer se lleva los ffmpeg y los recursos
-    quedan en processing_status=failed. Con 4 son 408 MB y el total baja a
-    1688 MB, con margen para el pico de ClamAV.
-
-    El enunciado exige registrar la concurrencia de workers en cada corrida, así
-    que se fija de forma explícita en terraform.tfvars y no se deja en el default.
-    Ver docs/entrega2/evidencia/.
+    Concurrencia de asynq en cada worker, es decir cuántos trabajos de media
+    procesa a la vez. Sale de la entrega 2: cada ffmpeg transcodificando 1080p
+    consume unos 102 MB y con 10 simultáneos la VM de 2 GiB entraba en OOM.
+    También es la asignación por instancia del autoscaler: con backlog N, el
+    grupo pide ceil(N / worker_concurrency) workers.
   EOT
   type        = number
   default     = 4
 }
+
+variable "autoscaler_cooldown_sec" {
+  description = <<-EOT
+    Periodo de inicialización de una instancia nueva: el autoscaler ignora sus
+    métricas durante este tiempo. Se ajusta al tiempo de arranque medido
+    (guest attribute mooc/ready-uptime-sec) para no escalar dos veces por el
+    mismo pico.
+  EOT
+  type        = number
+  default     = 180
+}
+
+variable "autohealing_initial_delay_sec" {
+  description = "Tiempo que el autohealing espera antes de evaluar una instancia nueva"
+  type        = number
+  default     = 300
+}
+
+# ---------------------------------------------------------------------------
+# Presupuesto de conexiones de Cloud SQL
+# ---------------------------------------------------------------------------
+
+variable "db_max_connections" {
+  description = "max_connections del tier de Cloud SQL (db-f1-micro admite 25)"
+  type        = number
+  default     = 25
+}
+
+variable "api_db_max_open_conns" {
+  description = "Tope del pool de PostgreSQL en cada réplica de la API (POSTGRES_MAX_OPEN_CONNS)"
+  type        = number
+  default     = 5
+}
+
+variable "worker_db_max_open_conns" {
+  description = <<-EOT
+    Tope del pool de PostgreSQL en cada réplica del worker. Las réplicas de API
+    y worker, todas a la vez y en su máximo, tienen que caber en
+    db_max_connections menos las reservadas de Cloud SQL; si no, la que arranca
+    última recibe "too many clients" y no arranca.
+  EOT
+  type        = number
+  default     = 2
+
+  validation {
+    condition = (
+      var.api_max_replicas * var.api_db_max_open_conns +
+      var.worker_max_replicas * var.worker_db_max_open_conns +
+      3 <= var.db_max_connections
+    )
+    error_message = "Las conexiones de API y workers en su máximo, más 3 reservadas de Cloud SQL, superan db_max_connections."
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Apagado ordenado
+# ---------------------------------------------------------------------------
+
+variable "api_shutdown_timeout_sec" {
+  description = "Tiempo que la API espera a las peticiones en curso tras SIGTERM (API_SHUTDOWN_TIMEOUT)"
+  type        = number
+  default     = 25
+
+  validation {
+    condition     = var.api_shutdown_timeout_sec > 0 && var.api_shutdown_timeout_sec <= 80
+    error_message = "Compute Engine da unos 90 s al script de apagado: el tope debe quedar por debajo de 80 s."
+  }
+}
+
+variable "worker_shutdown_timeout_sec" {
+  description = "Tiempo que asynq espera a los trabajos en curso tras SIGTERM (WORKER_SHUTDOWN_TIMEOUT)"
+  type        = number
+  default     = 60
+
+  validation {
+    condition     = var.worker_shutdown_timeout_sec > 0 && var.worker_shutdown_timeout_sec <= 80
+    error_message = "Compute Engine da unos 90 s al script de apagado: el tope debe quedar por debajo de 80 s."
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Balanceador
+# ---------------------------------------------------------------------------
+
+variable "ssl_mode" {
+  description = <<-EOT
+    Certificado del balanceador. "managed" pide un certificado administrado por
+    Google para el dominio (sin dominio propio, <IP>.sslip.io, que resuelve a
+    la IP del balanceador); tarda entre 15 y 60 minutos en quedar ACTIVE.
+    "self_signed" sube un certificado autofirmado: funciona al instante, pero
+    los clientes tienen que aceptarlo (curl -k).
+  EOT
+  type        = string
+  default     = "managed"
+
+  validation {
+    condition     = contains(["managed", "self_signed"], var.ssl_mode)
+    error_message = "ssl_mode debe ser \"managed\" o \"self_signed\"."
+  }
+}
+
+variable "domain" {
+  description = "Dominio público de la aplicación. Vacío usa <IP del balanceador>.sslip.io"
+  type        = string
+  default     = ""
+}
+
+variable "api_backend_timeout_sec" {
+  description = <<-EOT
+    Timeout del backend de la API en el balanceador. El valor por defecto de
+    Google (30 s) corta un PATCH de TUS con un fragmento grande desde un
+    enlace lento.
+  EOT
+  type        = number
+  default     = 300
+}
+
+variable "deploy_frontend" {
+  description = "Desplegar el frontend Next.js en su grupo de tamaño fijo detrás del balanceador"
+  type        = bool
+  default     = true
+}
+
+# ---------------------------------------------------------------------------
+# Telemetría
+# ---------------------------------------------------------------------------
 
 variable "install_ops_agent" {
   description = "Instalar el Ops Agent de Google Cloud en las VM para enviar métricas a Cloud Monitoring"
@@ -132,14 +315,28 @@ variable "metrics_scrape_interval" {
   }
 }
 
+variable "queue_metrics_interval_sec" {
+  description = "Cada cuántos segundos mooc-queue publica pending, active y backlog en Cloud Monitoring"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.queue_metrics_interval_sec >= 10
+    error_message = "Cloud Monitoring no acepta más de un punto cada 5 s por serie; menos de 10 s no aporta."
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Generador de carga
+# ---------------------------------------------------------------------------
+
 variable "deploy_loadgen" {
   description = <<-EOT
-    Aprovisiona una tercera máquina, de pruebas y no de la aplicación, para
-    ejecutar k6 desde dentro de la región. El enunciado exige que el generador
-    corra fuera de las dos VM de la aplicación y que se verifique que no limita
-    los resultados: desde un enlace doméstico, la subida de los archivos del
-    escenario 2 mide la conexión del portátil y no el sistema. Apagado por
-    defecto: sólo se enciende para las corridas de capacidad.
+    Aprovisiona una máquina de pruebas, no de la aplicación, para ejecutar k6
+    desde dentro de la región. El enunciado exige que el generador corra fuera
+    de las máquinas de la aplicación y que se verifique que no limita los
+    resultados. Apagado por defecto: sólo se enciende para las corridas de
+    capacidad.
   EOT
   type        = bool
   default     = false
@@ -162,6 +359,28 @@ variable "task_version" {
   type        = string
   default     = "v3.53.1"
 }
+
+variable "repo_url" {
+  description = "Repositorio que clona el generador de carga para tener los guiones de k6"
+  type        = string
+  default     = "https://github.com/DiegoMunevar2007/Proyecto-MOOC-Cloud.git"
+}
+
+variable "repo_branch" {
+  description = "Rama que clona el generador de carga"
+  type        = string
+  default     = "main"
+}
+
+variable "app_dir" {
+  description = "Directorio del clon en el generador de carga"
+  type        = string
+  default     = "/opt/mooc"
+}
+
+# ---------------------------------------------------------------------------
+# Base de datos
+# ---------------------------------------------------------------------------
 
 variable "db_version" {
   description = "Versión de PostgreSQL del servicio administrado"
@@ -192,6 +411,10 @@ variable "db_user" {
   type        = string
   default     = "postgres"
 }
+
+# ---------------------------------------------------------------------------
+# Acceso
+# ---------------------------------------------------------------------------
 
 variable "authorized_ssh_ranges" {
   description = "Rangos CIDR autorizados para SSH (por defecto el rango de IAP)"

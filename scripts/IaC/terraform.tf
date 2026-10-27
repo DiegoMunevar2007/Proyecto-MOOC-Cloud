@@ -10,6 +10,12 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.7"
     }
+    # Solo para ssl_mode = "self_signed": genera la clave y el certificado que
+    # se suben al balanceador.
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 
   # Backend local por defecto (laboratorio). Para estado compartido,
@@ -17,6 +23,6 @@ terraform {
   #
   # backend "gcs" {
   #   bucket = "<PROJECT_ID>-tfstate"
-  #   prefix = "entrega2"
+  #   prefix = "entrega3"
   # }
 }
