@@ -107,3 +107,21 @@ func TestMetricsHandlerServesScrape(t *testing.T) {
 		t.Error("el scrape usa la etiqueta job, que colisiona con la del receptor")
 	}
 }
+
+// TestServedByHeader verifica que cada respuesta lleva la réplica que la
+// atendió, también en los errores: detrás del balanceador es lo que permite ver
+// el reparto entre instancias del grupo con un curl.
+func TestServedByHeader(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.Use(servedBy("mooc-api-abcd"))
+	router.GET("/health", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+	for _, path := range []string{"/health", "/no-existe"} {
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		if got := w.Header().Get("X-Served-By"); got != "mooc-api-abcd" {
+			t.Errorf("%s: X-Served-By = %q, se esperaba mooc-api-abcd", path, got)
+		}
+	}
+}

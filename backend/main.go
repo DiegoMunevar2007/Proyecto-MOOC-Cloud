@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/DiegoMunevar2007/Proyecto-1-Cloud.git/admin"
@@ -146,8 +150,19 @@ func metricsHandler() http.Handler {
 	})
 }
 
+// servedBy marca cada respuesta con la réplica que la atendió. Detrás del
+// balanceador es la forma directa de ver el reparto entre instancias del grupo
+// con un curl, sin cruzar logs de varias VM.
+func servedBy(instance string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("X-Served-By", instance)
+		c.Next()
+	}
+}
+
 func SetupRouter(db *gorm.DB, rdb *redis.Client) *gin.Engine {
 	router := gin.Default()
+	router.Use(servedBy(utils.InstanceName()))
 	router.Use(instrumentRequest())
 
 	router.GET("/health", healthCheck(db, rdb))
@@ -170,13 +185,16 @@ func initPostgresDB() *gorm.DB {
 		panic("No se pudo conectar a la base de datos")
 	}
 	// Cloud SQL db-f1-micro admite 25 conexiones. Sin tope, GORM abre una por
-	// petición concurrente y la API empieza a devolver 500 al pasar de ahí.
+	// petición concurrente y la API empieza a devolver 500 al pasar de ahí. Con
+	// varias réplicas el presupuesto se reparte entre todas: el tope por réplica
+	// lo fija el despliegue (POSTGRES_MAX_OPEN_CONNS) según el máximo del grupo.
 	sqlDB, err := db.DB()
 	if err != nil {
 		panic("No se pudo obtener el pool de PostgreSQL")
 	}
-	sqlDB.SetMaxOpenConns(10)
-	sqlDB.SetMaxIdleConns(10)
+	maxConns := utils.GetEnvInt("POSTGRES_MAX_OPEN_CONNS", 10)
+	sqlDB.SetMaxOpenConns(maxConns)
+	sqlDB.SetMaxIdleConns(maxConns)
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	return db
 }
@@ -206,7 +224,8 @@ func main() {
 	// Inicializar conexión a la base de datos
 	db := initPostgresDB()
 	rdb := initRedisClient()
-	if err := db.AutoMigrate(
+	// Con lock: varias réplicas pueden arrancar a la vez (ver MigrateWithLock).
+	if err := utils.MigrateWithLock(db,
 		&auth.UserModel{},
 		&admin.AuditLog{},
 		&courses.Course{},
@@ -249,8 +268,34 @@ func main() {
 		panic("No se pudo montar TUS: " + err.Error())
 	}
 
-	// Iniciar el servidor
-	if err := router.Run(":8080"); err != nil {
-		panic(err)
+	// Iniciar el servidor. No se usa router.Run porque no deja apagar en orden:
+	// cuando el autoscaler retira una instancia, la VM recibe SIGTERM y las
+	// peticiones en curso (incluido un PATCH de TUS a medias) deben terminar
+	// antes de salir, dentro de API_SHUTDOWN_TIMEOUT.
+	srv := &http.Server{
+		Addr:              ":8080",
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("api: %v", err)
+		}
+	}()
+	log.Printf("api: escuchando en %s como %s", srv.Addr, utils.InstanceName())
+
+	sigCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
+	defer stop()
+	<-sigCtx.Done()
+	stop()
+
+	timeout := utils.GetEnvDuration("API_SHUTDOWN_TIMEOUT", 20*time.Second)
+	log.Printf("api: señal de apagado recibida, esperando hasta %s a las peticiones en curso", timeout)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("api: apagado forzado: %v", err)
+		return
+	}
+	log.Print("api: apagado ordenado completo")
 }

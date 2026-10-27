@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/DiegoMunevar2007/Proyecto-1-Cloud.git/courses"
@@ -31,10 +30,7 @@ func retryDelay(n int, _ error, _ *asynq.Task) time.Duration {
 
 func main() {
 	redisOpt := queue.RedisOpt()
-	concurrency, _ := strconv.Atoi(utils.GetEnv("WORKER_CONCURRENCY", "10"))
-	if concurrency <= 0 {
-		concurrency = 10
-	}
+	concurrency := utils.GetEnvInt("WORKER_CONCURRENCY", 10)
 
 	dsn := utils.GetPostgresDSN()
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
@@ -42,16 +38,19 @@ func main() {
 		log.Fatalf("worker: no se pudo conectar a Postgres: %v", err)
 	}
 	// Tope bajo: el worker compite por las mismas 25 conexiones de Cloud SQL que
-	// la API y solo necesita una por trabajo concurrente en vuelo.
+	// la API y solo necesita una por trabajo concurrente en vuelo. Con varias
+	// réplicas lo fija el despliegue (POSTGRES_MAX_OPEN_CONNS).
 	sqlDB, err := db.DB()
 	if err != nil {
 		log.Fatalf("worker: no se pudo obtener el pool de Postgres: %v", err)
 	}
-	sqlDB.SetMaxOpenConns(4)
-	sqlDB.SetMaxIdleConns(4)
+	maxConns := utils.GetEnvInt("POSTGRES_MAX_OPEN_CONNS", 4)
+	sqlDB.SetMaxOpenConns(maxConns)
+	sqlDB.SetMaxIdleConns(maxConns)
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
-	// AutoMigrate compartido con la API (misma fuente de verdad).
-	if err := db.AutoMigrate(
+	// Migración compartida con la API (misma fuente de verdad) y con el mismo
+	// lock: una API y un worker que arrancan juntos migran por turnos.
+	if err := utils.MigrateWithLock(db,
 		&courses.Course{},
 		&courses.CourseVersion{},
 		&courses.Module{},
@@ -77,8 +76,15 @@ func main() {
 		ClamHost: utils.GetEnv("CLAMAV_HOST", "clamav:3310"),
 	}
 
+	// Al retirar una instancia, asynq deja de tomar trabajos y espera a los que
+	// están en curso hasta ShutdownTimeout; los que no terminan vuelven a la
+	// cola y los toma otra réplica. El arranque lo alinea con el tiempo que la
+	// VM concede al script de apagado.
+	shutdownTimeout := utils.GetEnvDuration("WORKER_SHUTDOWN_TIMEOUT", 8*time.Second)
+
 	srv := asynq.NewServer(redisOpt, asynq.Config{
-		Concurrency: concurrency,
+		Concurrency:     concurrency,
+		ShutdownTimeout: shutdownTimeout,
 		Queues: map[string]int{
 			queue.MediaQueue: 6,
 			"default":        3,
@@ -101,7 +107,8 @@ func main() {
 	defer stopMetrics()
 	go serveMetrics(metricsCtx, metricsAddr())
 
-	log.Printf("worker: escuchando colas %s/default (concurrency=%d)", queue.MediaQueue, concurrency)
+	log.Printf("worker: %s escuchando colas %s/default (concurrency=%d, apagado=%s)",
+		utils.InstanceName(), queue.MediaQueue, concurrency, shutdownTimeout)
 	if err := srv.Run(mux); err != nil {
 		log.Fatalf("worker: %v", err)
 		os.Exit(1)
