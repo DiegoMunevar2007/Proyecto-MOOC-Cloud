@@ -284,7 +284,7 @@ variable "api_backend_timeout_sec" {
 }
 
 variable "deploy_frontend" {
-  description = "Desplegar el frontend Next.js en su grupo de tamaño fijo detrás del balanceador"
+  description = "Desplegar el frontend (SPA de React servida por nginx) en su grupo de tamaño fijo detrás del balanceador"
   type        = bool
   default     = true
 }

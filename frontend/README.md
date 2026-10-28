@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend MOOC
 
-## Getting Started
+SPA de React (Vite + TypeScript) servida por nginx en el puerto 3000.
 
-First, run the development server:
+Pantallas:
+
+- **Catálogo**: cursos publicados con búsqueda y paginación; el detalle muestra
+  módulos y unidades, y un estudiante con sesión puede inscribirse.
+- **Mis cursos**: inscripciones del estudiante, con la opción de retirarse.
+- **Estado**: consulta `/health` y, con «Probar balanceo», hace 20 peticiones y
+  muestra cuántas atendió cada instancia de la API según la cabecera
+  `X-Served-By`.
+- **Ingresar**: inicio de sesión, registro y verificación de la cuenta con el
+  código que llega por correo (Mailpit).
+
+Todas las llamadas usan rutas relativas (`/api/...`, `/health`). En GCP el
+balanceador sirve el frontend y la API en el mismo origen; en desarrollo el
+servidor de Vite hace de proxy, así que la API no necesita CORS.
+
+## Desarrollo
+
+Con la API corriendo en `localhost:8080` (`docker compose up` en la raíz):
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+corepack enable
+pnpm install
+pnpm dev                                  # http://localhost:3000
+API_URL=http://otra-api:8080 pnpm dev     # otra API
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Imagen
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+docker buildx build --platform linux/amd64 -t mooc-frontend .
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+El build de Vite corre nativo en la máquina que construye (los archivos son
+iguales en cualquier arquitectura) y solo la etapa de nginx es `linux/amd64`.
+En el despliegue la publica `scripts/IaC/scripts/publish_images.sh`.

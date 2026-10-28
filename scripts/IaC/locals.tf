@@ -108,9 +108,9 @@ locals {
     METRICS_ADDR            = ":${local.worker_port}"
   })
 
-  frontend_env = {
-    PORT = tostring(local.frontend_port)
-  }
+  # El frontend es estático (nginx escucha en 3000 por su configuración): no
+  # recibe entorno ni secretos.
+  frontend_env = {}
 
   api_secrets = {
     POSTGRES_PASSWORD = local.secret_postgres_password

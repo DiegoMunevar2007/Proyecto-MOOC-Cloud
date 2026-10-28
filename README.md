@@ -65,6 +65,7 @@ Las corridas conviene ejecutarlas desde la máquina `mooc-loadgen` (`deploy_load
 
 - `backend/`: la API en Go, organizada por módulos de negocio. Las pruebas corren con `go test ./...`; la de migraciones concurrentes necesita `POSTGRES_TEST_DSN`.
 - `backend/worker/`: el worker que consume la cola, escanea y transcodifica.
+- `frontend/`: SPA de React (Vite) servida por nginx: catálogo, inscripciones, sesión y una vista de estado que muestra el reparto del balanceador entre las instancias de la API.
 - `capacity-planning/`: guiones de k6, datos de prueba, resultados, gráficas y el informe de capacidad.
 - `docs/entrega2/`: documentación de arquitectura, diagramas y evidencia del despliegue.
 - `scripts/IaC/`: infraestructura como código, guiones de arranque y apagado de las máquinas, publicación de imágenes y pruebas de Terraform (`terraform test`).

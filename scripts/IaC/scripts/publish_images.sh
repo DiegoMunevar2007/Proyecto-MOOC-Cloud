@@ -73,10 +73,10 @@ build() {
 build api "${REPO_ROOT}/backend" "${REPO_ROOT}/backend/Dockerfile"
 build worker "${REPO_ROOT}/backend" "${REPO_ROOT}/backend/worker/Dockerfile"
 if [[ "${SKIP_FRONTEND}" != "true" ]]; then
-  # El balanceador sirve frontend y API en el mismo origen: el frontend llama a
-  # /api/... relativo y no necesita conocer la URL pública al construirse.
-  build frontend "${REPO_ROOT}/frontend" "${REPO_ROOT}/frontend/Dockerfile" \
-    --build-arg NEXT_PUBLIC_API_URL=
+  # SPA estática servida por nginx. El balanceador sirve frontend y API en el
+  # mismo origen: el frontend llama a /api/... relativo y no necesita conocer
+  # la URL pública al construirse.
+  build frontend "${REPO_ROOT}/frontend" "${REPO_ROOT}/frontend/Dockerfile"
 else
   echo "==> frontend: omitido (SKIP_FRONTEND=true); usa deploy_frontend = false"
 fi
