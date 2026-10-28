@@ -92,6 +92,7 @@ export interface CourseVersion {
   id: number;
   number: number;
   status: string;
+  min_required_pct?: number;
   modules?: Module[];
 }
 
@@ -115,6 +116,14 @@ export interface CoursesResponse {
 export interface CourseDetail {
   course: Course;
   version?: CourseVersion;
+}
+
+export interface Progreso {
+  done: number;
+  total: number;
+  percent: number;
+  status: string;
+  badge?: string;
 }
 
 export interface Enrollment {
