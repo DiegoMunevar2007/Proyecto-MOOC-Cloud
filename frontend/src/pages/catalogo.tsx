@@ -24,7 +24,9 @@ const ORDENES = [
 
 function Hero({ busqueda, onBuscar }: { busqueda: string; onBuscar: (q: string) => void }) {
   const [valor, setValor] = useState(busqueda);
-  useEffect(() => setValor(busqueda), [busqueda]);
+  useEffect(() => {
+    setValor(busqueda);
+  }, [busqueda]);
 
   function enviar(e: FormEvent) {
     e.preventDefault();

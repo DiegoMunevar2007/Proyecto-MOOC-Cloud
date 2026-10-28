@@ -12,7 +12,9 @@ import { useAuth } from "@/lib/auth";
 // Al cambiar de página se vuelve arriba, como en una carga normal.
 function VolverArriba() {
   const { pathname } = useLocation();
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return null;
 }
 
