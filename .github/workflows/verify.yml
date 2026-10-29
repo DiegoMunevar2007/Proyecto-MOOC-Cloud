@@ -150,7 +150,7 @@ jobs:
         if: always()
         run: |
           mkdir -p artifacts/quality
-          docker image inspect "$SONAR_IMAGE" "$SCANNER_IMAGE" > artifacts/quality/images.json
+          docker image inspect "$SONAR_IMAGE" "$SCANNER_IMAGE" > artifacts/quality/images.json || true
           docker logs mooc-sonar > artifacts/quality/server.log 2>&1
       - uses: actions/upload-artifact@v4
         if: always()

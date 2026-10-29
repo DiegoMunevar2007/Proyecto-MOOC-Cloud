@@ -10,6 +10,7 @@ from pathlib import Path
 import secrets
 import subprocess
 import time
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -25,7 +26,17 @@ def request(path, params=None, token=None, post=False, basic=None):
         headers["Authorization"] = "Bearer " + token
     if basic:
         headers["Authorization"] = "Basic " + base64.b64encode(basic.encode()).decode()
-    with urlopen(Request(target, data=body, headers=headers), timeout=60) as response:
+    try:
+        response = urlopen(Request(target, data=body, headers=headers), timeout=60)
+    except HTTPError as error:
+        detail = error.read().decode(errors="replace")
+        for key, value in (params or {}).items():
+            if "password" in key.lower() or "token" in key.lower():
+                detail = detail.replace(str(value), "[redacted]")
+        if token:
+            detail = detail.replace(token, "[redacted]")
+        raise RuntimeError(f"SonarQube {path}: HTTP {error.code}: {detail}") from None
+    with response:
         data = response.read().decode()
         try:
             return json.loads(data)
@@ -46,7 +57,9 @@ def bootstrap():
         time.sleep(5)
     else:
         raise SystemExit("SonarQube no arrancó en 450 segundos")
-    password = secrets.token_urlsafe(32)
+    # Garantizar las cuatro clases exigidas por SonarQube: el azar por sí solo
+    # puede producir una cadena sin dígito o símbolo y volver el CI intermitente.
+    password = "Aa1!" + secrets.token_urlsafe(32)
     request("/api/users/change_password", {"login": "admin", "previousPassword": "admin", "password": password}, post=True, basic="admin:admin")
     token = request("/api/user_tokens/generate", {"name": "ci-analysis"}, post=True, basic="admin:" + password)["token"]
     request("/api/projects/create", {"project": KEY, "name": "MOOC Cloud"}, token=token, post=True)
