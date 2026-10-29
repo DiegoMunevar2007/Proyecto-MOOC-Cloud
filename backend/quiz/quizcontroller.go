@@ -29,6 +29,7 @@ func SetupQuizRoutes(router *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 	requireAuthor := auth.RequireRole(rdb, auth.RoleProfessor, auth.RoleAdmin)
 	requireAuth := auth.RequireRole(rdb)
 	router.POST("/quizzes", requireAuthor, h.Create)
+	router.GET("/resources/:id/quiz", requireAuth, h.ResourceQuiz)
 	router.POST("/quizzes/:id/questions", requireAuthor, h.AddQuestions)
 	router.GET("/quizzes/:id", requireAuthor, h.GetProfessor)
 	router.DELETE("/quizzes/:id", requireAuthor, h.Delete)
@@ -85,7 +86,8 @@ func studentView(db *gorm.DB, a *Attempt) AttemptResponse {
 		if feedback {
 			fb := make([]bool, 0, len(snap))
 			for i, s := range snap {
-				fb = append(fb, answers[strconv.Itoa(i)] == s.Correct)
+				answer, exists := answers[strconv.Itoa(i)]
+				fb = append(fb, exists && answer == s.Correct)
 			}
 			resp.Feedback = fb
 		}
@@ -290,6 +292,7 @@ func (h *Handler) DeleteQuestion(c *gin.Context) {
 }
 
 // Start inicia o retoma el intento en borrador. Idempotente por Idempotency-Key.//
+//
 //	@Summary	Iniciar intento
 //	@Description	Congela un snapshot de preguntas; reintento con la misma clave retorna el mismo intento.
 //	@Tags			Quizzes

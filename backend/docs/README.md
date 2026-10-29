@@ -8,7 +8,7 @@ con descripciones en español. Se **genera** desde anotaciones `swag` en el cód
 
 ```bash
 # Instalar el generador (versión pineada, fuera del go.mod)
-go install github.com/swaggo/swag/v2/cmd/swag@v2.0.0
+go install github.com/swaggo/swag/v2/cmd/swag@v2.0.0-rc6
 
 # Generar desde backend/ (swag emite swagger.json por defecto)
 cd backend

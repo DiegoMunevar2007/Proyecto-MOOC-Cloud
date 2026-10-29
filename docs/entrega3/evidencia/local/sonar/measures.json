@@ -1,0 +1,52 @@
+{
+  "component": {
+    "key": "mooc-cloud",
+    "name": "MOOC Cloud",
+    "qualifier": "TRK",
+    "measures": [
+      {
+        "metric": "coverage",
+        "value": "5.5",
+        "bestValue": false
+      },
+      {
+        "metric": "bugs",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "code_smells",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "duplicated_lines_density",
+        "value": "0.5",
+        "bestValue": false
+      },
+      {
+        "metric": "ncloc_language_distribution",
+        "value": "css=171;docker=34;go=5581;ts=5166"
+      },
+      {
+        "metric": "ncloc",
+        "value": "10952"
+      },
+      {
+        "metric": "vulnerabilities",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "sqale_index",
+        "value": "0",
+        "bestValue": true
+      },
+      {
+        "metric": "sqale_rating",
+        "value": "1.0",
+        "bestValue": true
+      }
+    ]
+  }
+}

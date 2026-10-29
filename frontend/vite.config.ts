@@ -16,6 +16,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    watch: { ignored: ["**/test-results/**", "**/playwright-report/**"] },
     proxy: {
       "/api": api,
       "/health": api,

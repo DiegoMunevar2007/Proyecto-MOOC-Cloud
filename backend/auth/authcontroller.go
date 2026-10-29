@@ -33,14 +33,14 @@ func SetupAuthRoutes(router *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) {
 }
 
 // Register registra un nuevo usuario.
-// Solo la creación de profesores requiere autenticación de administrador.
+// Crear profesores y administradores requiere autenticación de administrador.
 //
 //	@Summary		Registrar usuario
-//	@Description	Registra un estudiante o administrador de forma pública. Crear un profesor requiere el token de un administrador.
+//	@Description	Registra estudiantes de forma pública. Crear profesores o administradores requiere el token de un administrador.
 //	@Tags			Autenticación
 //	@Produce		json
 //	@Param			request	body		RegisterRequest	true	"Datos de registro"
-//	@Param			Authorization	header	string	false	"Bearer <token> (obligatorio solo para rol professor)"
+//	@Param			Authorization	header	string	false	"Bearer <token> (obligatorio para professor o admin)"
 //	@Success		201		{object}	utils.MessageResponse	"Usuario registrado"
 //	@Failure		400		{object}	utils.ErrorResponse	"Solicitud inválida o rol inválido"
 //	@Failure		401		{object}	utils.ErrorResponse	"Token de administrador inválido"
@@ -64,11 +64,11 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	// Solo professor requiere autorización de admin; student y admin son públicos (curso).
-	if requestedRole == RoleProfessor {
+	// Los roles privilegiados nunca se asignan mediante registro público.
+	if requestedRole == RoleProfessor || requestedRole == RoleAdmin {
 		token := BearerToken(c)
 		if token == "" {
-			c.JSON(403, gin.H{"error": "Se requiere autenticación de administrador para crear un profesor"})
+			c.JSON(403, gin.H{"error": "Se requiere autenticación de administrador para crear una cuenta privilegiada"})
 			return
 		}
 		_, role, _, err := ResolveSessionTokenWithRole(token, h.RDB)
@@ -77,7 +77,7 @@ func (h *Handler) Register(c *gin.Context) {
 			return
 		}
 		if NormalizeRole(role) != RoleAdmin {
-			c.JSON(403, gin.H{"error": "Solo un administrador puede crear profesores"})
+			c.JSON(403, gin.H{"error": "Solo un administrador puede crear cuentas privilegiadas"})
 			return
 		}
 	}

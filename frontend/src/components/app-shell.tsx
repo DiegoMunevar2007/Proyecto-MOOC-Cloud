@@ -22,6 +22,7 @@ function useEnlaces() {
   return [
     { to: "/", label: "Catálogo", icono: BookOpen, end: true, visible: true },
     { to: "/mis-cursos", label: "Mis cursos", icono: GraduationCap, end: false, visible: me?.role === "student" },
+    { to: "/ensenar", label: "Enseñar", icono: GraduationCap, end: false, visible: me?.role === "professor" || me?.role === "admin" },
     { to: "/estado", label: "Estado", icono: Activity, end: false, visible: true },
   ].filter((e) => e.visible);
 }

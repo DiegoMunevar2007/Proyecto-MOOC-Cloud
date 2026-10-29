@@ -153,13 +153,15 @@ export function MisCursos() {
         ]);
         return { inscripcion, curso, progreso };
       }),
-    ).then((resultado) => vigente && setFilas(resultado));
+    ).then((resultado) => vigente && setFilas(resultado)).catch(() => {
+      if (vigente) toast.error("No se pudieron cargar tus cursos. Vuelve a intentarlo.");
+    });
     return () => {
       vigente = false;
     };
   }, [lista]);
 
-  const ordenadas = (filas ?? []).sort((a, b) => Number(b.inscripcion.inscrito) - Number(a.inscripcion.inscrito));
+  const ordenadas = [...(filas ?? [])].sort((a, b) => Number(b.inscripcion.inscrito) - Number(a.inscripcion.inscrito));
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">

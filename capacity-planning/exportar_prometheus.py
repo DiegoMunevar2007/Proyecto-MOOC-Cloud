@@ -48,6 +48,14 @@ APP_METRICS = [
     "prometheus.googleapis.com/process_resident_memory_bytes/gauge",
     "prometheus.googleapis.com/go_goroutines/gauge",
     "prometheus.googleapis.com/up/gauge",
+    "custom.googleapis.com/mooc/queue/pending",
+    "custom.googleapis.com/mooc/queue/active",
+    "custom.googleapis.com/mooc/queue/backlog",
+    "cloudsql.googleapis.com/database/cpu/utilization",
+    "cloudsql.googleapis.com/database/memory/utilization",
+    "cloudsql.googleapis.com/database/postgresql/num_backends",
+    "cloudsql.googleapis.com/database/disk/read_ops_count",
+    "cloudsql.googleapis.com/database/disk/write_ops_count",
 ]
 
 # Métricas de host. El enunciado pide CPU, memoria, red y disco de los servidores.
@@ -251,7 +259,18 @@ def main():
     ap.add_argument("--sin-host", action="store_true")
     ap.add_argument("--ventana", action="append",
                     help="exporta solo la ventana indicada (repetible)")
+    ap.add_argument("--inicio", help="Inicio UTC ISO-8601 de una corrida nueva")
+    ap.add_argument("--fin", help="Fin UTC ISO-8601 de una corrida nueva")
+    ap.add_argument("--nombre", default="entrega3", help="Nombre de la corrida nueva")
     args = ap.parse_args()
+    if bool(args.inicio) != bool(args.fin):
+        ap.error("--inicio y --fin deben aparecer juntos")
+    if args.inicio:
+        from datetime import datetime
+        if datetime.fromisoformat(args.inicio.replace("Z", "+00:00")) >= datetime.fromisoformat(args.fin.replace("Z", "+00:00")):
+            ap.error("inicio debe ser anterior a fin")
+        if args.ventana:
+            ap.error("no combinar fechas explícitas con --ventana")
 
     tok = token()
     mapear_instancias(args.project)
@@ -269,7 +288,7 @@ def main():
         return 0
 
     manifest = []
-    ventanas = WINDOWS.items()
+    ventanas = [(args.nombre, (args.inicio, args.fin))] if args.inicio else WINDOWS.items()
     if args.ventana:
         elegidas = set(args.ventana)
         ventanas = [(k, v) for k, v in WINDOWS.items() if k in elegidas]

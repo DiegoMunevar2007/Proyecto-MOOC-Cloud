@@ -1,71 +1,59 @@
-# Plataforma MOOC
+# Plataforma MOOC — Entrega 3, ISIS4426
 
-Aplicación de cursos masivos abiertos en línea, desarrollada como monolito modular en Go con workers independientes, cola de mensajes y almacenamiento de objetos. Esta entrega (entrega 3) es la aplicación elástica sobre IaaS en Google Cloud: la API y los workers corren en dos grupos de instancias independientes con autoscaling, de 1 a 3 instancias cada uno, detrás de un balanceador externo HTTPS. La cola compartida (Redis), el antimalware y el correo de pruebas viven en una VM aparte, fuera de los grupos; la base de datos es Cloud SQL y los objetos están en Cloud Storage.
+Go API + worker asynq, React/Vite, Redis, ClamAV, PostgreSQL y almacenamiento de objetos. La infraestructura preparada usa dos MIG independientes de 1–3 instancias, API por CPU y workers por backlog, balanceador externo HTTPS y frontend fijo. Redis/ClamAV quedan fuera de los grupos.
 
-- La API escala por CPU promedio del grupo (objetivo 0.6).
-- Los workers escalan por el backlog de la cola, que la VM de la cola publica en Cloud Monitoring cada 30 s: una instancia por cada 4 trabajos pendientes o en curso.
+**Estado al 2026-10-29:** implementación y preparación de pruebas/documentación en curso. El despliegue elástico, las mediciones cloud y el video final siguen pendientes. Las imágenes `652591e65fc2` no incluyen los cambios nuevos. La URL pública se registrará después de aplicar y verificar la infraestructura; no hay una URL de entrega 3 acreditada todavía.
 
-## Aplicación desplegada
+## Documentación de entrega 3
 
-La aplicación responde en la URL que imprime `terraform output app_url`, de la forma `https://<IP del balanceador>.sslip.io`, con un certificado administrado por Google. El endpoint `/health` sirve para comprobar que la plataforma está arriba: además de responder, verifica la conexión con PostgreSQL y con Redis, y la cabecera `X-Served-By` dice qué instancia del grupo atendió la petición.
+- [Arquitectura y decisiones](docs/entrega3/arquitectura.md), con [fuentes de diagramas](docs/entrega3/diagramas/).
+- [Flujos del frontend y prueba de navegador](docs/entrega3/frontend.md).
+- [Operación y verificación del despliegue](docs/entrega3/operacion.md).
+- [Calidad SonarQube en GitHub Actions](docs/entrega3/calidad.md) y [deuda técnica](docs/entrega3/deuda-tecnica.md).
+- [Pruebas de carga y elasticidad](capacity-planning/pruebas_de_carga_entrega3.md), [costos](docs/entrega3/costos.md).
+- [Matriz de cierre, identificadores finales y guion del video](docs/entrega3/cierre.md).
 
-La entrega 2 (dos VM fijas) está identificada con el tag `entrega-2`.
+## Desarrollo local
 
-Las cuentas de prueba y las credenciales se entregan por el canal privado del curso y no se publican aquí.
-
-## Documentación
-
-La arquitectura elástica de esta entrega, las señales de escalamiento y el procedimiento de despliegue y verificación están en [`scripts/IaC/README.md`](scripts/IaC/README.md).
-
-De la entrega 2: el documento de arquitectura está en [`docs/entrega2/arquitectura.md`](docs/entrega2/arquitectura.md). Explica los componentes y sus responsabilidades, el modelo de despliegue, las decisiones y adaptaciones frente a la entrega anterior, el procedimiento de operación y recuperación, y el costo con sus limitaciones.
-
-Los diagramas de componentes y de despliegue están en [`docs/entrega2/diagramas/`](docs/entrega2/diagramas/).
-
-El informe de capacidad de los dos escenarios está en [`capacity-planning/pruebas_de_carga_entrega2.md`](capacity-planning/pruebas_de_carga_entrega2.md), con las gráficas en [`capacity-planning/graficas/`](capacity-planning/graficas/).
-
-## Sustentación
-
-El video de sustentación de la entrega 2 está en [youtu.be/WeTkZry5aL4](https://youtu.be/WeTkZry5aL4).
-
-## Despliegue
-
-La infraestructura se aprovisiona con Terraform desde `scripts/IaC`. Las máquinas no compilan nada al arrancar: descargan imágenes publicadas en Artifact Registry, así que primero se crea el registro y se publican las imágenes:
+Requiere Docker Compose reciente con soporte `!override`/`!reset`. Crear `.env` desde `.env.example` si todavía no existe; las credenciales de ejemplo son solo locales.
 
 ```bash
-cd scripts/IaC
-cp terraform.tfvars.example terraform.tfvars        # project_id
-terraform init
-terraform apply -target=google_artifact_registry_repository.images
-./scripts/publish_images.sh                          # imprime image_tag
-# poner image_tag = "<etiqueta>" en terraform.tfvars
-terraform plan -out=plan.tfplan
-terraform apply plan.tfplan
+# Desde la raíz; conserva los datos existentes.
+docker compose -p mooc-local -f docker-compose.yml -f compose.dev.yml up -d --build
 ```
 
-Todas las máquinas usan el mismo `scripts/IaC/scripts/startup.sh` y `shutdown.sh`; lo que cambia por rol llega por metadatos. Los secretos se guardan en Secret Manager y cada rol tiene su propia cuenta de servicio con acceso solo a los suyos. No hay credenciales en el repositorio ni en las imágenes.
+Abrir <http://localhost:5180> o <http://mooc.localhost:5180>. El frontend conecta con la API por el proxy de Vite; los archivos se cargan directamente al almacenamiento local. Esperar a que ClamAV esté healthy antes de probar medios. En equipos con poca memoria, ejecutar Sonar y compilaciones por separado del recorrido multimedia.
 
-El detalle del despliegue, la verificación y las señales de escalamiento está en [`scripts/IaC/README.md`](scripts/IaC/README.md).
-
-## Pruebas
-
-El corpus sintético y las corridas de carga se manejan con las tareas del `Taskfile` de `capacity-planning`. Hacen falta las herramientas `k6` y `go-task`:
+El registro público solo permite estudiantes. Para preparar un administrador local, `./main provision-admin` lee un objeto JSON con `username`, `email`, `password` por stdin dentro del contenedor de la API (operador autenticado; no endpoint público). La contraseña debe tener 12–72 bytes y no debe pasarse por argumentos o guardarse en el repo. El comando no sobrescribe cuentas existentes. Para la prueba automática, el wrapper siguiente crea una cuenta temporal sin imprimir su contraseña:
 
 ```bash
-cd capacity-planning
-export ENV=gcp
-export ADMIN_USER=admin1 ADMIN_PASS='...' SEED_PASSWORD='...'
-task seed:all      # siembra el corpus
-task esc1:all      # escenario 1
-task esc2:all      # escenario 2
+cd frontend
+corepack enable
+pnpm install --frozen-lockfile
+pnpm exec playwright install chromium
+cd ..
+# Descargar los medios Git LFS o indicar E2E_VIDEO_PATH=/ruta/a/video-real.mp4.
+python3 scripts/test_browser.py
 ```
 
-Las corridas conviene ejecutarlas desde la máquina `mooc-loadgen` (`deploy_loadgen = true`), para no medir el enlace del portátil. `task gcp:reparto` muestra cómo reparte el balanceador entre las instancias de la API. Cada corrida deja un resumen y un archivo de muestras en `capacity-planning/results/`.
+## Verificación
 
-## Estructura
+GitHub Actions ejecuta Go con race detector, integración PostgreSQL/Redis, build TypeScript/Vite, recorrido de navegador, Terraform con mocks y SonarQube efímero. No requiere conectar una cuenta SonarCloud ni crea recursos de GCP. El reporte completo queda como artefacto por SHA; conservarlo para la entrega.
 
-- `backend/`: la API en Go, organizada por módulos de negocio. Las pruebas corren con `go test ./...`; la de migraciones concurrentes necesita `POSTGRES_TEST_DSN`.
-- `backend/worker/`: el worker que consume la cola, escanea y transcodifica.
-- `frontend/`: SPA de React (Vite) servida por nginx: catálogo, inscripciones, sesión y una vista de estado que muestra el reparto del balanceador entre las instancias de la API.
-- `capacity-planning/`: guiones de k6, datos de prueba, resultados, gráficas y el informe de capacidad.
-- `docs/entrega2/`: documentación de arquitectura, diagramas y evidencia del despliegue.
-- `scripts/IaC/`: infraestructura como código, guiones de arranque y apagado de las máquinas, publicación de imágenes y pruebas de Terraform (`terraform test`).
+```bash
+cd backend && go test ./...
+# La integración requiere POSTGRES_TEST_DSN y REDIS_TEST_ADDR; ver workflow.
+cd ../scripts/IaC
+terraform init -backend=false
+terraform fmt -check -recursive
+terraform validate
+terraform test
+```
+
+## Despliegue y sustentación
+
+La preparación del repositorio **no autoriza crear recursos**. Seguir [operacion.md](docs/entrega3/operacion.md): inventario de recursos `mooc-*`, comprobación de state local, publicación de nuevas imágenes solo con permiso, plan actualizado y revisión antes del apply autorizado. No aplicar el plan antiguo para probar estos cambios. No importar, borrar ni ejecutar destroy automáticamente. No versionar tfvars, state ni planes.
+
+Tras verificar cloud, registrar `app_url`, `lb_ip`, `image_tag`, SHA, run de Actions, evidencia de carga y enlace del video en [cierre.md](docs/entrega3/cierre.md). Credenciales de prueba por el canal privado del curso. La revisión/merge del PR #1 y la release/tag final se coordinan con Diego.
+
+Histórico: [arquitectura entrega 2](docs/entrega2/arquitectura.md), [informe de carga entrega 2](capacity-planning/pruebas_de_carga_entrega2.md), tag `entrega-2` y [video de entrega 2](https://youtu.be/WeTkZry5aL4). No sustituyen la evidencia requerida para entrega 3.

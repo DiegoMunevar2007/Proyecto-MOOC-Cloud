@@ -1,4 +1,4 @@
-# Pruebas de carga de la entrega 2, con k6.
+# Pruebas de carga de las entregas 2 y 3, con k6.
 #
 # Cada nivel de carga es una corrida independiente y repetible, que es lo que
 # permite comparar entre niveles y repetir la medición cercana al límite. Este
@@ -452,6 +452,18 @@ tasks:
   # -------------------------------------------------------------------------
   # Comprobaciones
   # -------------------------------------------------------------------------
+  esc3:api:
+    desc: Ciclo 3A de API (34 minutos); requiere observador GCP en otra terminal
+    cmds:
+      - mkdir -p results/entrega3/{{.RUN_ID}}
+      - k6 run {{.common}} --summary-export=results/entrega3/{{.RUN_ID}}/3a-summary.json --out json=results/entrega3/{{.RUN_ID}}/3a.json k6/esc3_api.js
+
+  esc3:workers:
+    desc: Ciclo 3B de workers (40 minutos); requiere observador y reconciliación posterior
+    cmds:
+      - mkdir -p results/entrega3/{{.RUN_ID}}
+      - k6 run {{.common}} -e ACCEPTED_MANIFEST=true --log-format raw --console-output=results/entrega3/{{.RUN_ID}}/accepted.jsonl --summary-export=results/entrega3/{{.RUN_ID}}/3b-summary.json --out json=results/entrega3/{{.RUN_ID}}/3b.json k6/esc3_workers.js
+
   check:
     desc: Valida sintaxis y carga de datos de todos los guiones sin medir
     cmds:

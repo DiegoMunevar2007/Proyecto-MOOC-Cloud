@@ -648,6 +648,13 @@ func ValidatePublishable(db *gorm.DB, courseID uint) []string {
 					} else {
 						hasVisibleReady = true
 					}
+				case ResourceTypeQuiz:
+					var count int64
+					if err := db.Table("questions").Joins("JOIN quizzes ON quizzes.id = questions.quiz_id").Where("quizzes.resource_id = ?", r.ID).Count(&count).Error; err != nil || count == 0 {
+						errs = append(errs, fmt.Sprintf("quiz '%s' debe tener preguntas", r.Title))
+					} else {
+						hasVisibleReady = true
+					}
 				case ResourceTypeText:
 					if strings.TrimSpace(r.MarkdownBody) == "" {
 						errs = append(errs, fmt.Sprintf("recurso visible '%s' sin contenido markdown", r.Title))

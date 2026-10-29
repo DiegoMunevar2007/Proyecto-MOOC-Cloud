@@ -71,9 +71,19 @@ export interface Resource {
   title: string;
   type: string;
   processing_status?: string;
+  stable_id: string;
+  scan_status?: string;
+  object_key?: string;
+  hls_key?: string;
+  markdown_body?: string;
+  external_url?: string;
+  is_visible: boolean;
+  is_required: boolean;
+  allow_download: boolean;
 }
 
 export interface Unit {
+  description?: string;
   id: number;
   title: string;
   position: number;

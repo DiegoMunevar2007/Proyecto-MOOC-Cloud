@@ -161,7 +161,7 @@ func StartAttempt(db *gorm.DB, studentID, quizID uint, idemKey string) (*Attempt
 		return nil, err
 	}
 	_ = r
-	if c.Status != courses.CourseStatusPublished {
+	if c.Status != courses.CourseStatusPublished || !r.IsVisible {
 		return nil, ErrForbidden
 	}
 	if !enroll.IsEnrolled(db, studentID, c.ID) {
@@ -169,7 +169,7 @@ func StartAttempt(db *gorm.DB, studentID, quizID uint, idemKey string) (*Attempt
 	}
 	if idemKey != "" {
 		var dup Attempt
-		if err := db.Where("idempotency_key = ?", idemKey).First(&dup).Error; err == nil {
+		if err := db.Where("idempotency_key = ? AND student_id = ? AND quiz_id = ?", idemKey, studentID, quizID).First(&dup).Error; err == nil {
 			return &dup, nil
 		}
 	}
@@ -273,7 +273,7 @@ func Grade(snap []SnapshotQuestion, answers map[string]int) int {
 	}
 	hit := 0
 	for i, q := range snap {
-		if answers[strconv.Itoa(i)] == q.Correct {
+		if answer, exists := answers[strconv.Itoa(i)]; exists && answer == q.Correct {
 			hit++
 		}
 	}

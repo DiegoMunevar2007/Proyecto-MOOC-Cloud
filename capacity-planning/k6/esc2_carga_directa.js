@@ -155,6 +155,7 @@ export function cargaDirecta(data) {
 
   if (r && r.object_key === objectKey) {
     cargaAceptada.add(1, { perfil: perfil.clave, estado: r.processing_status });
+    if (__ENV.ACCEPTED_MANIFEST === 'true') console.log(JSON.stringify({ event: 'upload_accepted', resource_id: recurso.id, task_id: autorizado.task_id, object_key: objectKey, timestamp: new Date().toISOString() }));
   }
 
   think();

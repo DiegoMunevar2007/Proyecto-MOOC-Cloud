@@ -14,5 +14,7 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates ffmpeg
 COPY --from=builder /worker /app/worker
 RUN chmod +x /app/worker
+RUN addgroup -S app && adduser -S -G app app
+USER app
 EXPOSE 9101
 CMD ["./worker"]

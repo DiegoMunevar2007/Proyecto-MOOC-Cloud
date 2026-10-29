@@ -115,22 +115,24 @@ gcloud config set project "$PROJECT_ID"
 
 ## Despliegue
 
+Seguir primero [el runbook de entrega 3](../../docs/entrega3/operacion.md).
+La preparación del código no autoriza crear recursos. Comprobar inventario
+`mooc-*` y state; si existen recursos previos sin state, detenerse y mostrarlos.
+El registro ya existe en el proyecto de laboratorio: no ejecutar un apply
+parcial para recrearlo, ni importar o borrar recursos sin confirmación.
+
 ```bash
 cd scripts/IaC
-cp terraform.tfvars.example terraform.tfvars   # ajustar project_id
+# Conservar terraform.tfvars y state locales existentes; no sobrescribirlos.
 terraform init
-
-# 1. El registro de imágenes, antes que nada
-terraform apply -target=google_artifact_registry_repository.images
-
-# 2. Construir y publicar api, worker y frontend; imprime la etiqueta
-./scripts/publish_images.sh
-#    → image_tag = "1a2b3c4d5e6f"  (ponerla en terraform.tfvars)
-
-# 3. El resto
 terraform plan -out=plan.tfplan
-terraform apply plan.tfplan
 ```
+
+Con permiso explícito para publicar, `./scripts/publish_images.sh` construye
+API, worker y frontend y devuelve una etiqueta nueva. Actualizar `image_tag`
+en tfvars y volver a generar el plan. Revisar ese plan antes de un
+`terraform apply plan.tfplan` autorizado. No aplicar el plan antiguo después
+de cambiar código o etiquetas. No ejecutar destroy automáticamente.
 
 La etiqueta es el commit corto (con `-dirty-<fecha>` si hay cambios sin
 confirmar). Las etiquetas son inmutables: para desplegar código nuevo se publica

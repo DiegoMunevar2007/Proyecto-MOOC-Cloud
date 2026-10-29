@@ -301,7 +301,7 @@ export function Curso() {
                                 return (
                                   <li key={r.id} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                                     <Icono className="size-4 shrink-0" />
-                                    <span className="truncate">{r.title}</span>
+                                    <Link className="truncate text-primary underline-offset-4 hover:underline" to={`/cursos/${id}/recursos/${r.id}`}>{r.title}</Link>
                                     {etiqueta.toLowerCase() !== r.title.toLowerCase() && (
                                       <span className="ml-auto shrink-0 text-xs">{etiqueta}</span>
                                     )}

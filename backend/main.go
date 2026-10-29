@@ -223,7 +223,6 @@ func initRedisClient() *redis.Client {
 func main() {
 	// Inicializar conexión a la base de datos
 	db := initPostgresDB()
-	rdb := initRedisClient()
 	// Con lock: varias réplicas pueden arrancar a la vez (ver MigrateWithLock).
 	if err := utils.MigrateWithLock(db,
 		&auth.UserModel{},
@@ -243,6 +242,14 @@ func main() {
 		panic("No se pudo migrar el esquema: " + err.Error())
 	}
 
+	if len(os.Args) == 2 && os.Args[1] == "provision-admin" {
+		if err := auth.ProvisionAdmin(db, os.Stdin); err != nil {
+			log.Fatal(err)
+		}
+		log.Print("cuenta administrativa creada")
+		return
+	}
+	rdb := initRedisClient()
 	// Cola asynq (publicador) y almacenamiento S3-compatible.
 	// Sin estado local: solo clientes externos, la API escala horizontalmente.
 	qclient := queue.NewClient()

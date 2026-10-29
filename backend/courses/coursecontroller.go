@@ -64,6 +64,7 @@ func SetupCourseRoutes(router *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) 
 	g := router.Group("/courses")
 	{
 		g.GET("", h.ListCatalog)
+		g.GET("/mine", requireAuthor, h.ListMine)
 		g.GET("/:id", h.GetDetail)
 		g.POST("", requireAuthor, h.Create)
 		g.PUT("/:id", requireAuthor, h.Update)
@@ -76,6 +77,8 @@ func SetupCourseRoutes(router *gin.RouterGroup, db *gorm.DB, rdb *redis.Client) 
 		g.DELETE("/:id", requireAuthor, h.Delete)
 	}
 
+	router.PUT("/modules/:id", requireAuthor, h.EditModule)
+	router.PUT("/units/:id", requireAuthor, h.EditUnit)
 	router.POST("/modules/:id/units", requireAuthor, h.AddUnit)
 	router.POST("/modules/:id/units/reorder", requireAuthor, h.ReorderUnits)
 	router.POST("/units/:id/resources", requireAuthor, h.AddResource)
@@ -295,6 +298,16 @@ func (h *Handler) Delete(c *gin.Context) {
 //	@Router			/api/v1/courses/{id}/validate [get]
 func (h *Handler) Validate(c *gin.Context) {
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
+	course, err := getCourse(h.DB, uint(id))
+	if err != nil {
+		writeErr(c, err)
+		return
+	}
+	uid, role := currentUser(c)
+	if !IsOwnerOrAdmin(course, uid, role) {
+		writeErr(c, ErrForbidden)
+		return
+	}
 	errs := ValidatePublishable(h.DB, uint(id))
 	c.JSON(200, gin.H{"valid": len(errs) == 0, "errors": errs})
 }
@@ -649,11 +662,21 @@ func (h *Handler) UploadURL(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "object_key requerido"})
 		return
 	}
-	var r Resource
-	if err := h.DB.First(&r, uint(id)).Error; err != nil {
-		writeErr(c, ErrNotFound)
+	rp, course, version, err := LocateResource(h.DB, uint(id))
+	if err != nil {
+		writeErr(c, err)
 		return
 	}
+	uid, role := currentUser(c)
+	if err := mustEditable(course, version, uid, role); err != nil {
+		writeErr(c, err)
+		return
+	}
+	if strings.TrimSpace(req.ObjectKey) == "" || req.SizeBytes <= 0 {
+		writeErr(c, ErrInvalidPayload)
+		return
+	}
+	r := *rp
 	if storageClient == nil || queueClient == nil {
 		c.JSON(501, gin.H{"error": "almacenamiento/cola no configurados"})
 		return
@@ -691,12 +714,19 @@ func (h *Handler) UploadURL(c *gin.Context) {
 		idemKey = "scan-" + r.StableID
 	}
 	transcodeKey := "transcode-" + r.StableID
-	taskID, _ := queueClient.EnqueueScan(queue.ScanPayload{
+	if err := h.DB.Save(&r).Error; err != nil {
+		writeErr(c, err)
+		return
+	}
+	taskID, err := queueClient.EnqueueScan(queue.ScanPayload{
 		ResourceID:   r.ID,
 		ObjectKey:    r.ObjectKey,
 		TranscodeKey: transcodeKey,
 	}, idemKey)
-	h.DB.Save(&r)
+	if err != nil {
+		c.JSON(503, gin.H{"error": "no se pudo encolar el archivo; reintente la carga"})
+		return
+	}
 	c.JSON(200, gin.H{"upload_url": url, "task_id": taskID, "resource": r})
 }
 
@@ -780,6 +810,10 @@ func (h *Handler) DownloadURL(c *gin.Context) {
 	}
 	if storageClient == nil {
 		c.JSON(403, gin.H{"error": "sin derecho de acceso"})
+		return
+	}
+	if !ResourceAvailable(r) {
+		c.JSON(409, gin.H{"error": "el archivo todavía no está disponible"})
 		return
 	}
 	bucket := storage.BucketOriginals

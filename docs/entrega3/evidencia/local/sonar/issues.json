@@ -1,0 +1,144 @@
+[
+  {
+    "key": "df42b0bb-e060-4c67-951a-78bf40e938e0",
+    "rule": "docker:S6471",
+    "severity": "MINOR",
+    "component": "mooc-cloud:backend/Dockerfile",
+    "project": "mooc-cloud",
+    "hash": "72cc33f7273acdc5b24e7ebaa1860886",
+    "textRange": {
+      "startLine": 13,
+      "endLine": 13,
+      "startOffset": 0,
+      "endOffset": 18
+    },
+    "flows": [],
+    "resolution": "FIXED",
+    "status": "CLOSED",
+    "message": "The \"alpine\" image runs with \"root\" as the default user. Make sure it is safe here.",
+    "effort": "15min",
+    "debt": "15min",
+    "author": "",
+    "tags": [
+      "cwe",
+      "dockerfile",
+      "former-hotspot"
+    ],
+    "creationDate": "2026-10-29T21:32:34+0000",
+    "updateDate": "2026-10-29T21:52:37+0000",
+    "closeDate": "2026-10-29T21:52:37+0000",
+    "type": "VULNERABILITY",
+    "scope": "MAIN",
+    "quickFixAvailable": false,
+    "messageFormattings": [],
+    "codeVariants": [],
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "SECURITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "FIXED",
+    "prioritizedRule": false,
+    "fromSonarQubeUpdate": false,
+    "internalTags": [],
+    "linkedTicketStatus": "NOT_LINKED"
+  },
+  {
+    "key": "dd1e4ccd-a5b0-4f01-8337-b492704c6995",
+    "rule": "docker:S6471",
+    "severity": "MINOR",
+    "component": "mooc-cloud:backend/worker/Dockerfile",
+    "project": "mooc-cloud",
+    "hash": "72cc33f7273acdc5b24e7ebaa1860886",
+    "textRange": {
+      "startLine": 12,
+      "endLine": 12,
+      "startOffset": 0,
+      "endOffset": 18
+    },
+    "flows": [],
+    "resolution": "FIXED",
+    "status": "CLOSED",
+    "message": "The \"alpine\" image runs with \"root\" as the default user. Make sure it is safe here.",
+    "effort": "15min",
+    "debt": "15min",
+    "author": "",
+    "tags": [
+      "cwe",
+      "dockerfile",
+      "former-hotspot"
+    ],
+    "creationDate": "2026-10-29T21:32:34+0000",
+    "updateDate": "2026-10-29T21:52:37+0000",
+    "closeDate": "2026-10-29T21:52:37+0000",
+    "type": "VULNERABILITY",
+    "scope": "MAIN",
+    "quickFixAvailable": false,
+    "messageFormattings": [],
+    "codeVariants": [],
+    "cleanCodeAttribute": "COMPLETE",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "SECURITY",
+        "severity": "LOW"
+      }
+    ],
+    "issueStatus": "FIXED",
+    "prioritizedRule": false,
+    "fromSonarQubeUpdate": false,
+    "internalTags": [],
+    "linkedTicketStatus": "NOT_LINKED"
+  },
+  {
+    "key": "e8feccb3-6a4f-463e-b236-97acf1310139",
+    "rule": "typescript:S9383",
+    "severity": "MAJOR",
+    "component": "mooc-cloud:frontend/src/pages/mis-cursos.tsx",
+    "project": "mooc-cloud",
+    "hash": "ec23cfb4c1da189c3ad5f3bcc69b8d3b",
+    "textRange": {
+      "startLine": 146,
+      "endLine": 156,
+      "startOffset": 4,
+      "endOffset": 58
+    },
+    "flows": [],
+    "resolution": "FIXED",
+    "status": "CLOSED",
+    "message": "Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator.",
+    "effort": "5min",
+    "debt": "5min",
+    "author": "",
+    "tags": [
+      "async",
+      "es2017",
+      "type-dependent",
+      "promise"
+    ],
+    "creationDate": "2026-10-29T21:32:34+0000",
+    "updateDate": "2026-10-29T21:52:37+0000",
+    "closeDate": "2026-10-29T21:52:37+0000",
+    "type": "BUG",
+    "scope": "MAIN",
+    "quickFixAvailable": true,
+    "messageFormattings": [],
+    "codeVariants": [],
+    "cleanCodeAttribute": "LOGICAL",
+    "cleanCodeAttributeCategory": "INTENTIONAL",
+    "impacts": [
+      {
+        "softwareQuality": "RELIABILITY",
+        "severity": "MEDIUM"
+      }
+    ],
+    "issueStatus": "FIXED",
+    "prioritizedRule": false,
+    "fromSonarQubeUpdate": false,
+    "internalTags": [],
+    "linkedTicketStatus": "NOT_LINKED"
+  }
+]

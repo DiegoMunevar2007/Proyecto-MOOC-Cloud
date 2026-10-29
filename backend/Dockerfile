@@ -15,5 +15,7 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /app/main /app/main
 RUN chmod +x /app/main
+RUN addgroup -S app && adduser -S -G app app
+USER app
 EXPOSE 8080
 CMD ["./main"]
