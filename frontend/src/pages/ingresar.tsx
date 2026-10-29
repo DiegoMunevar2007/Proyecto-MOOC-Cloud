@@ -92,7 +92,7 @@ export function Ingresar() {
         body: JSON.stringify({ username: usuario, password: contrasena }),
       });
       await iniciarSesion(data.token);
-      navigate(destino, { replace: true });
+      await navigate(destino, { replace: true });
     });
   }
 

@@ -43,7 +43,7 @@ export function Ensenar() {
           .replace(/[^a-z0-9]+/g, "-")}-${crypto.randomUUID().slice(0, 8)}`,
         min_required_pct: Number(values.get("minimum")),
       });
-      navigate(`/ensenar/${data.course.id}`);
+      await navigate(`/ensenar/${data.course.id}`);
     }, "Borrador creado");
   }
   return (

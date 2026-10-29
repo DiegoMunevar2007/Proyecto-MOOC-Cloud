@@ -14,6 +14,10 @@ El inventario inicial tuvo 3 hallazgos (1 Major y 2 Minor). Se corrigieron en c�
 
 **Inventario Major+ abierto del SHA final: pendiente de ejecutar Actions y revisar `issues.json`.** No trasladar el inventario inicial como si fuera el final. Incluir para cada hallazgo: regla, severidad, componente/línea, efecto, disposición, responsable y fecha. Los security hotspots requieren revisión humana y no equivalen automáticamente a vulnerabilidades confirmadas. Conservarlos completos en el reporte.
 
+## Hallazgos de la primera ejecución en GitHub
+
+La ejecución del commit `492999f` pasó los umbrales totales y exportó el reporte con `dirty=false`, pero detectó tres Major adicionales de `typescript:S9383`: navegación sin esperar en `pages/ensenar.tsx`, `pages/ingresar.tsx` y `components/app-shell.tsx`. Se corrigieron esperando `navigate` dentro de las funciones asíncronas existentes. La repetición de Actions es la fuente para confirmar su cierre; el diagnóstico local anterior no sustituye esta revisión del reporte completo.
+
 ## Compromisos técnicos identificados fuera de Sonar
 
 Responsable de seguimiento propuesto para estos puntos: Wyo Hann Chu; acordar distribución con Diego al revisar el PR. Fechas objetivo de revisión: 2026-10-30 o antes de la demo si ocurre antes. Los cambios de arquitectura requieren aprobación del usuario.

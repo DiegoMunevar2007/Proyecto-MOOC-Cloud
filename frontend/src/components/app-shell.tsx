@@ -71,7 +71,7 @@ function MenuUsuario() {
         <DropdownMenuItem
           onSelect={async () => {
             await cerrarSesion();
-            navigate("/");
+            await navigate("/");
           }}
         >
           <LogOut /> Cerrar sesión
