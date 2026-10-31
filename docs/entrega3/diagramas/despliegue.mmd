@@ -1,0 +1,16 @@
+flowchart TB
+  Internet -->|443 HTTPS; 80 redirige| LB[Balanceador global EXTERNAL_MANAGED]
+  subgraph GCP[proyecto-2-cloud-509714 · us-central1 · us-central1-a]
+    LB -->|/api, /api/*, /health, /openapi.json| API[MIG API · 1–3 e2-small]
+    LB -->|otras rutas| FE[MIG frontend · 1 e2-small]
+    API --> Q[mooc-queue · e2-medium · Redis + ClamAV + Mailpit]
+    W[MIG workers · 1–3 e2-small] --> Q
+    API --> SQL[(Cloud SQL · IP privada)]
+    W --> SQL
+    API --> OBJ[(Cloud Storage)]
+    W --> OBJ
+    Q -->|backlog cada 30 s| MON[Cloud Monitoring]
+    MON -->|métrica de grupo| W
+    API --> NAT[Cloud NAT: salida sin IP pública de VM]
+    W --> NAT
+  end

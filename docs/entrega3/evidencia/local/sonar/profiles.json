@@ -1,0 +1,524 @@
+{
+  "profiles": [
+    {
+      "key": "a1ddb7bd-98a7-4fa3-ad6e-d2df7fe04f1e",
+      "name": "Sonar way core",
+      "language": "azureresourcemanager",
+      "languageName": "Azure Resource Manager",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 27,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "68334794-85fd-4b75-a9b8-14e7dd68be1d",
+      "name": "Sonar way core",
+      "language": "cloudformation",
+      "languageName": "CloudFormation",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 22,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "80fa6c08-ffc3-4e78-abf0-de3ab656e76a",
+      "name": "Sonar way core",
+      "language": "cs",
+      "languageName": "C#",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 121,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "8b05ab7b-f24b-4681-9ab7-cf1c3e7c1fb0",
+      "name": "Sonar way core",
+      "language": "css",
+      "languageName": "CSS",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 25,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:17+0000",
+      "lastUsed": "2026-10-29T21:52:37+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "11a1983b-ad12-416a-b61b-68b66f7d5ab4",
+      "name": "Sonar way core",
+      "language": "docker",
+      "languageName": "Docker",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 18,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:17+0000",
+      "lastUsed": "2026-10-29T21:52:37+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "e8446be9-8448-44a6-a5d9-5417a11d264d",
+      "name": "Sonar way core",
+      "language": "flex",
+      "languageName": "Flex",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 11,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "69a95036-cca9-464f-8f5b-a041fc65235f",
+      "name": "Sonar way core",
+      "language": "go",
+      "languageName": "Go",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 6,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "lastUsed": "2026-10-29T21:52:37+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "7414b224-1085-418e-bd97-d45c931be872",
+      "name": "Sonar way core",
+      "language": "ipynb",
+      "languageName": "IPython Notebooks",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 230,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "bb770e3e-8ccb-4a39-818e-5b0b124a02de",
+      "name": "Sonar way core",
+      "language": "java",
+      "languageName": "Java",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 274,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "65d33281-adab-4d39-bc02-c728c79647dd",
+      "name": "Sonar way core",
+      "language": "js",
+      "languageName": "JavaScript",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 199,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:17+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "21725775-9823-43e6-8937-94cdf4ff5faf",
+      "name": "Sonar way comprehensive",
+      "language": "json",
+      "languageName": "JSON",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 0,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:17+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "f2d2f967-2d9a-4e21-9402-afff7d06271d",
+      "name": "Sonar way comprehensive",
+      "language": "jsp",
+      "languageName": "JSP",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 0,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:16+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "30c903e2-9fb1-4eaf-a46e-35346ca27ee2",
+      "name": "Sonar way core",
+      "language": "kotlin",
+      "languageName": "Kotlin",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 54,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "aed3857a-1659-4772-91c9-6b2812b85675",
+      "name": "Sonar way core",
+      "language": "kubernetes",
+      "languageName": "Kubernetes",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 18,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:17+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "ea6eda5d-1575-4a0a-9079-5439441e2c99",
+      "name": "Sonar way core",
+      "language": "php",
+      "languageName": "PHP",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 78,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "0c8d9e0d-5681-44bc-a193-89eae3e64993",
+      "name": "Sonar way core",
+      "language": "py",
+      "languageName": "Python",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 232,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:17+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "c13c1fa3-0a2b-4f6b-bba1-a836be5e376c",
+      "name": "Sonar way core",
+      "language": "ruby",
+      "languageName": "Ruby",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 9,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "5be6ef9e-20f7-4fae-ae7a-cbaa2cf3b4a6",
+      "name": "Sonar way core",
+      "language": "rust",
+      "languageName": "Rust",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 58,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "5769f062-70f4-4ec6-8b7a-e2eb1c4a8f6c",
+      "name": "Sonar way core",
+      "language": "scala",
+      "languageName": "Scala",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 8,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:17+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "9357052d-92c1-4c0c-a93e-d0937fa219b9",
+      "name": "Sonar way core",
+      "language": "secrets",
+      "languageName": "Secrets",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 30,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "9b148456-96b0-4955-bb7e-b91d011449a2",
+      "name": "Sonar way core",
+      "language": "terraform",
+      "languageName": "Terraform",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 49,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "70384470-3fee-4e79-bbee-27d91b3bfe01",
+      "name": "Sonar way core",
+      "language": "text",
+      "languageName": "Text",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 3,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "24d7dbf3-38dd-4fe4-9c05-89c4c3e54295",
+      "name": "Sonar way core",
+      "language": "ts",
+      "languageName": "TypeScript",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 198,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "lastUsed": "2026-10-29T21:52:37+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "25843b75-37a5-4152-9746-98271faa0aea",
+      "name": "Sonar way core",
+      "language": "vbnet",
+      "languageName": "VB.NET",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 55,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "222b6c7a-82c9-4c6a-9200-4ab60fb2767e",
+      "name": "Sonar way core",
+      "language": "web",
+      "languageName": "HTML",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 34,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "84eef8c4-27ec-4d5d-9ede-23b101bb1bd2",
+      "name": "Sonar way core",
+      "language": "xml",
+      "languageName": "XML",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 20,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:18+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    },
+    {
+      "key": "2b891adf-4df8-4f4b-863a-de269c0e782f",
+      "name": "Sonar way comprehensive",
+      "language": "yaml",
+      "languageName": "YAML",
+      "isInherited": false,
+      "isDefault": true,
+      "activeRuleCount": 0,
+      "activeDeprecatedRuleCount": 0,
+      "rulesUpdatedAt": "2026-10-29T21:28:17+0000",
+      "isBuiltIn": true,
+      "actions": {
+        "edit": false,
+        "setAsDefault": false,
+        "copy": true,
+        "associateProjects": false,
+        "delete": false
+      }
+    }
+  ],
+  "actions": {
+    "create": true
+  }
+}

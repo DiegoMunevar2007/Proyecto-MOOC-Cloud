@@ -1,4 +1,4 @@
-# Pruebas de carga de la entrega 2, con k6.
+# Pruebas de carga de las entregas 2 y 3, con k6.
 #
 # Cada nivel de carga es una corrida independiente y repetible, que es lo que
 # permite comparar entre niveles y repetir la medición cercana al límite. Este
@@ -10,8 +10,9 @@
 #   task esc1:all
 #   task esc2:all
 #
-# Contra el despliegue de GCP:
+# Contra el despliegue de GCP (balanceador HTTPS de la entrega 3):
 #   task gcp:wait && task gcp:seed
+#   task gcp:reparto   # reparto de peticiones entre las instancias de la API
 #
 # Las variables de entorno (ADMIN_USER, ADMIN_PASS, SEED_PASSWORD) salen del
 # entorno y nunca se versionan. Con ENV=gcp la URL se toma de Terraform.
@@ -391,15 +392,18 @@ tasks:
       # válida mientras ninguna VM la atiende. El sondeo de /health tardaría
       # quince minutos en decirlo, así que se comprueba primero.
       - |
-        if ! terraform -chdir="{{.IAC_DIR}}" state list 2>/dev/null | grep -q "^google_compute_instance\."; then
-          echo "El despliegue está incompleto: no hay máquinas virtuales en el state de Terraform."
+        if ! terraform -chdir="{{.IAC_DIR}}" state list 2>/dev/null | grep -q "^google_compute_instance_group_manager\."; then
+          echo "El despliegue está incompleto: no hay grupos de instancias en el state de Terraform."
           echo "La URL {{.BASE_URL}} existe pero nada la atiende."
           echo "Complétalo con:"
           echo "  cd {{.IAC_DIR}} && terraform apply"
           exit 1
         fi
       # El apply devuelve el control antes de que el arranque de las VM termine:
-      # clona el repositorio, compila las imágenes y levanta los contenedores.
+      # descargan las imágenes y levantan los contenedores. Con certificado
+      # administrado, además, el TLS falla mientras está en PROVISIONING
+      # (15-60 min); por eso la espera por defecto es de 15 minutos y se
+      # amplía con ESPERA_MAX.
       - |
         for i in $(seq 1 {{.ESPERA_MAX}}); do
           if curl -sk -m 5 "{{.BASE_URL}}/health" 2>/dev/null | grep -q '"status":"ok"'; then
@@ -407,10 +411,28 @@ tasks:
           fi
           sleep 15
         done
-        echo "la aplicación no respondió en el tiempo esperado: revisa el arranque de las VM:"
-        echo "  gcloud compute ssh mooc-web --zone=us-central1-a --tunnel-through-iap \\"
-        echo "    --command 'sudo tail -50 /var/log/mooc-startup.log'"
+        echo "la aplicación no respondió en el tiempo esperado. Revisa:"
+        echo "  gcloud compute ssl-certificates list            # ¿sigue en PROVISIONING?"
+        echo "  gcloud compute backend-services get-health mooc-api-backend --global"
+        echo "  gcloud compute instance-groups managed list-instances mooc-api-mig --zone=us-central1-a"
+        echo "  gcloud compute ssh <instancia> --zone=us-central1-a --tunnel-through-iap \\"
+        echo "    --command 'sudo tail -80 /var/log/mooc-startup.log'"
         exit 1
+
+  gcp:reparto:
+    desc: Muestra qué instancia de la API atiende cada petición (cabecera X-Served-By)
+    vars:
+      PETICIONES:
+        sh: echo "${PETICIONES:-30}"
+    cmds:
+      - |
+        if [ "${ENV:-local}" != "gcp" ]; then
+          echo "Requiere ENV=gcp en el entorno:  export ENV=gcp"; exit 1
+        fi
+        for i in $(seq 1 {{.PETICIONES}}); do
+          curl -sk -m 5 -o /dev/null -D - "{{.BASE_URL}}/health" | tr -d '\r' \
+            | awk -F': ' 'tolower($1) == "x-served-by" {print $2}'
+        done | sort | uniq -c
 
   gcp:seed:
     desc: Siembra el corpus completo contra el despliegue de GCP (requiere ENV=gcp)
@@ -430,6 +452,18 @@ tasks:
   # -------------------------------------------------------------------------
   # Comprobaciones
   # -------------------------------------------------------------------------
+  esc3:api:
+    desc: Ciclo 3A de API (34 minutos); requiere observador GCP en otra terminal
+    cmds:
+      - mkdir -p results/entrega3/{{.RUN_ID}}
+      - k6 run {{.common}} --summary-export=results/entrega3/{{.RUN_ID}}/3a-summary.json --out json=results/entrega3/{{.RUN_ID}}/3a.json k6/esc3_api.js
+
+  esc3:workers:
+    desc: Ciclo 3B de workers (40 minutos); requiere observador y reconciliación posterior
+    cmds:
+      - mkdir -p results/entrega3/{{.RUN_ID}}
+      - k6 run {{.common}} -e ACCEPTED_MANIFEST=true --log-format raw --console-output=results/entrega3/{{.RUN_ID}}/accepted.jsonl --summary-export=results/entrega3/{{.RUN_ID}}/3b-summary.json --out json=results/entrega3/{{.RUN_ID}}/3b.json k6/esc3_workers.js
+
   check:
     desc: Valida sintaxis y carga de datos de todos los guiones sin medir
     cmds:

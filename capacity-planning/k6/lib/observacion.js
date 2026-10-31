@@ -24,8 +24,8 @@ const queueRetry = new Gauge('queue_retry');
 const queueArchived = new Gauge('queue_archived');
 const queueSize = new Gauge('queue_size');
 const queueScrapeOk = new Gauge('queue_scrape_ok');
-const queueProcessedTotal = new Counter('queue_processed_total');
-const queueFailedTotal = new Counter('queue_failed_total');
+const queueProcessedTotal = new Gauge('queue_processed_total');
+const queueFailedTotal = new Gauge('queue_failed_total');
 const queueLatency = new Trend('queue_poll_latency_ms');
 const queuePollErrors = new Counter('queue_poll_errors_total');
 

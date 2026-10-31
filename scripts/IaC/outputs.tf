@@ -1,39 +1,66 @@
-# Solo valores del despliegue. El runbook de las pruebas de carga, los comandos de
-# SSH por IAP y la consulta PromQL de verificación de la ingesta viven en README.md:
-# un output es un valor que un script consume, no documentación.
+# Solo valores del despliegue. Los comandos de verificación y el runbook viven
+# en README.md: un output es un valor que un script consume, no documentación.
 output "project_id" {
   description = "Proyecto de GCP donde se desplegó la plataforma"
   value       = var.project_id
 }
 
 output "app_url" {
-  description = "URL pública de la API a través del proxy inverso"
-  value       = "https://${local.web_domain}"
+  description = "URL pública de la aplicación (balanceador HTTPS)"
+  value       = local.app_url
 }
 
-output "web_instance_name" {
-  description = "Nombre de la instancia de Web Server"
-  value       = google_compute_instance.web.name
+output "lb_ip" {
+  description = "IP pública del balanceador"
+  value       = google_compute_global_address.lb.address
 }
 
-output "worker_instance_name" {
-  description = "Nombre de la instancia de Worker Server"
-  value       = google_compute_instance.worker.name
+output "lb_domain" {
+  description = "Dominio del certificado del balanceador"
+  value       = local.lb_domain
 }
 
-output "web_public_ip" {
-  description = "IP pública reservada de Web Server"
-  value       = google_compute_address.web.address
+output "ssl_mode" {
+  description = "Tipo de certificado del balanceador (managed o self_signed)"
+  value       = var.ssl_mode
 }
 
-output "web_internal_ip" {
-  description = "IP privada de Web Server"
-  value       = google_compute_address.web_internal.address
+output "image_repository" {
+  description = "Repositorio de Artifact Registry donde publish_images.sh sube las imágenes"
+  value       = local.image_repo
 }
 
-output "worker_internal_ip" {
-  description = "IP privada de Worker Server (Redis/asynq)"
-  value       = google_compute_address.worker_internal.address
+output "image_tag" {
+  description = "Etiqueta de imagen desplegada en los grupos"
+  value       = var.image_tag
+}
+
+output "instance_groups" {
+  description = "Grupos de instancias administrados por rol"
+  value       = { for role, mig in google_compute_instance_group_manager.role : role => mig.name }
+}
+
+output "autoscalers" {
+  description = "Autoscalers de API y workers"
+  value = {
+    api    = google_compute_autoscaler.api.name
+    worker = google_compute_autoscaler.worker.name
+  }
+}
+
+output "queue_instance_name" {
+  description = "VM de la cola compartida (Redis, ClamAV, Mailpit)"
+  value       = google_compute_instance.queue.name
+}
+
+output "queue_internal_ip" {
+  description = "IP privada de mooc-queue"
+  value       = google_compute_address.queue_internal.address
+}
+
+output "queue_backlog_metric" {
+  description = "Métrica de grupo que usa el autoscaler de workers"
+  value       = google_monitoring_metric_descriptor.queue["backlog"].type
 }
 
 output "postgres_private_ip" {
@@ -61,22 +88,14 @@ output "bucket_public" {
   value       = google_storage_bucket.public.name
 }
 
-output "service_account_email" {
-  description = "Cuenta de servicio de runtime de las VMs"
-  value       = google_service_account.app.email
+output "service_accounts" {
+  description = "Cuenta de servicio de cada rol"
+  value       = { for role, sa in google_service_account.role : role => sa.email }
 }
 
 output "metrics_scrape_interval" {
   description = "Intervalo de recolección de métricas del Ops Agent en cada VM"
   value       = var.metrics_scrape_interval
-}
-
-output "metrics_targets" {
-  description = "Endpoint /metrics que el Ops Agent scrapea en cada VM, solo en loopback"
-  value = {
-    web    = "127.0.0.1:8080/metrics"
-    worker = "127.0.0.1:9101/metrics"
-  }
 }
 
 output "loadgen_internal_ip" {

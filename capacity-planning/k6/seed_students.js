@@ -31,8 +31,8 @@ const bcryptLogin = new Trend('seed_login_ms');
 const registros = new Counter('seed_users_created_total');
 const yaExistentes = new Counter('seed_users_existing_total');
 
-// El registro de profesor exige un token de admin: role=student y role=admin
-// son públicos, y para el seed solo necesitamos student y professor.
+// El registro de profesor o administrador exige un token de admin.
+// Solo el registro de estudiantes es público.
 function registro(username, email, role, tokenAdmin) {
   const headers = { 'Content-Type': 'application/json' };
   if (tokenAdmin) headers.Authorization = `Bearer ${tokenAdmin}`;
@@ -46,11 +46,11 @@ function registro(username, email, role, tokenAdmin) {
 
 // El registro no devuelve token, así que cada alta va seguida de un login para
 // tener una sesión lista para las corridas medidas.
-function login(username) {
+function login(username, password = SEED_PASSWORD) {
   const t0 = Date.now();
   const res = http.post(
     url('/api/v1/auth/login'),
-    JSON.stringify({ username, password: SEED_PASSWORD }),
+    JSON.stringify({ username, password }),
     params({ headers: { 'Content-Type': 'application/json' }, tags: { op: 'seed_login' } })
   );
   bcryptLogin.add(Date.now() - t0, { fase: 'seed' });
@@ -76,36 +76,12 @@ function alta(username, email, role, tokenAdmin) {
   return login(username);
 }
 
-// Asegura que exista un administrador con el que poder sembrar.
-//
-// En un despliegue recién creado no hay ninguno: la aplicación no los crea y
-// Terraform tampoco puede hacerlo, porque necesitaría la API ya en marcha. El
-// registro con role=admin es público en esta aplicación, así que el seed lo usa
-// para aprovisionarse el suyo. Sin esto, la suite entera queda bloqueada en un
-// entorno nuevo, que es exactamente el caso de GCP.
+// El operador aprovisiona el administrador por stdin antes del seed.
 function asegurarAdmin() {
   try {
-    return login(ADMIN_USER);
-  } catch (e) {
-    // 401 significa que la cuenta no existe (o la contraseña no coincide). En
-    // ese caso se registra; cualquier otro fallo se propaga.
-    const res = registro(ADMIN_USER, ADMIN_EMAIL, 'admin', null);
-    if (res.status !== 201 && res.status !== 409) {
-      throw new Error(
-        `el administrador ${ADMIN_USER} no existe y no se pudo registrar: ` +
-        `${res.status} ${res.body}`
-      );
-    }
-    // Si el registro devuelve 409, la cuenta existe con otra contraseña: el
-    // login de abajo volverá a fallar y el mensaje dirá qué revisar.
-    try {
-      return login(ADMIN_USER);
-    } catch (_e) {
-      throw new Error(
-        `el administrador ${ADMIN_USER} existe pero la contraseña no coincide con ADMIN_PASS. ` +
-        'Ajusta ADMIN_PASS o usa otro ADMIN_USER.'
-      );
-    }
+    return login(ADMIN_USER, ADMIN_PASS);
+  } catch (_error) {
+    throw new Error('No se pudo autenticar al administrador. Revisa ADMIN_USER/ADMIN_PASS y el aprovisionamiento privado con provision-admin; no existe bootstrap público.');
   }
 }
 

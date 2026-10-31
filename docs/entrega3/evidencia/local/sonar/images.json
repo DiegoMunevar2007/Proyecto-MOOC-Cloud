@@ -1,0 +1,154 @@
+[
+    {
+        "Id": "sha256:aa0d41212704d1ed35f7ae3b49886b39f639590baf8020cdb191c2a2eb8f9eae",
+        "RepoTags": [
+            "sonarqube:community"
+        ],
+        "RepoDigests": [
+            "sonarqube@sha256:aa0d41212704d1ed35f7ae3b49886b39f639590baf8020cdb191c2a2eb8f9eae"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-10-27T00:36:19.257327596Z",
+        "Config": {
+            "User": "sonarqube",
+            "ExposedPorts": {
+                "9000/tcp": {}
+            },
+            "Env": [
+                "PATH=/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "JAVA_HOME=/opt/java/openjdk",
+                "LANG=en_US.UTF-8",
+                "LANGUAGE=en_US:en",
+                "LC_ALL=en_US.UTF-8",
+                "JAVA_VERSION=jdk-25.0.4.1+1",
+                "DOCKER_RUNNING=true",
+                "SONARQUBE_HOME=/opt/sonarqube",
+                "SONAR_VERSION=26.10.0.133078",
+                "SQ_DATA_DIR=/opt/sonarqube/data",
+                "SQ_EXTENSIONS_DIR=/opt/sonarqube/extensions",
+                "SQ_LOGS_DIR=/opt/sonarqube/logs",
+                "SQ_TEMP_DIR=/opt/sonarqube/temp",
+                "ES_TMPDIR=/opt/sonarqube/temp"
+            ],
+            "Entrypoint": [
+                "/opt/sonarqube/docker/entrypoint.sh"
+            ],
+            "Volumes": {
+                "/opt/sonarqube/data": {},
+                "/opt/sonarqube/extensions": {},
+                "/opt/sonarqube/logs": {},
+                "/opt/sonarqube/temp": {}
+            },
+            "WorkingDir": "/opt/sonarqube",
+            "Labels": {
+                "io.k8s.description": "SonarQube Community Build is a self-managed, automatic code review tool that systematically helps you deliver Clean Code.",
+                "io.openshift.min-cpu": "400m",
+                "io.openshift.min-memory": "2048M",
+                "io.openshift.non-scalable": "true",
+                "io.openshift.tags": "sonarqube,static-code-analysis,code-quality,clean-code",
+                "org.opencontainers.image.url": "https://github.com/SonarSource/docker-sonarqube",
+                "org.opencontainers.image.version": "24.04"
+            },
+            "StopSignal": "SIGINT"
+        },
+        "Architecture": "arm64",
+        "Variant": "v8",
+        "Os": "linux",
+        "Size": 1090778064,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:107ffca6dcd3fc87a7bed8c062f5ddc0d6a4b107205c82c0b49efdb7c1aff967",
+                "sha256:d8b2a30d7a24a8e1fdcadee35d5a3883aa37ebbfeb8a9ddae88f40ebd56a4956",
+                "sha256:6e9dc9d333a1358412bea795b50c505939c6257ef5820d089b3fe0a193163a3e",
+                "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+                "sha256:1f7172dd4ab55c9b60f2d3bd4f06680cc55a784381b7d5d1ca71b7a59dc3b1a8",
+                "sha256:3c570fa31a2954d8fa4446864dd852d50b97f3895ad70f06edc7ecd0302e1526",
+                "sha256:6b7893935df7bd356f919f13292228441fb70b89464de510eef978e19ff43c31",
+                "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-29T21:24:33.412273172Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.oci.image.index.v1+json",
+            "digest": "sha256:aa0d41212704d1ed35f7ae3b49886b39f639590baf8020cdb191c2a2eb8f9eae",
+            "size": 2709
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/library/sonarqube"
+                }
+            ]
+        }
+    },
+    {
+        "Id": "sha256:47956b669bf486bdad919e1cbd0533223515aa0b6d1d31763e5a3754942df6d7",
+        "RepoTags": [
+            "sonarsource/sonar-scanner-cli:latest"
+        ],
+        "RepoDigests": [
+            "sonarsource/sonar-scanner-cli@sha256:47956b669bf486bdad919e1cbd0533223515aa0b6d1d31763e5a3754942df6d7"
+        ],
+        "Comment": "buildkit.dockerfile.v0",
+        "Created": "2026-10-23T18:02:47.434229368Z",
+        "Config": {
+            "User": "1000:1000",
+            "Env": [
+                "PATH=/opt/sonar-scanner/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "LANG=C.UTF-8",
+                "JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto",
+                "HOME=/tmp",
+                "XDG_CONFIG_HOME=/tmp",
+                "SONAR_SCANNER_HOME=/opt/sonar-scanner",
+                "SONAR_USER_HOME=/opt/sonar-scanner/.sonar",
+                "SRC_PATH=/usr/src",
+                "SCANNER_WORKDIR_PATH=/tmp/.scannerwork",
+                "POETRY_CACHE_DIR=/opt/poetry/cache",
+                "POETRY_VIRTUALENVS_PATH=/opt/poetry/virtualenvs",
+                "LC_ALL=C.UTF-8",
+                "NODE_OPTIONS=--use-openssl-ca"
+            ],
+            "Entrypoint": [
+                "/usr/bin/entrypoint.sh"
+            ],
+            "Cmd": [
+                "sonar-scanner"
+            ],
+            "WorkingDir": "/usr/src",
+            "ArgsEscaped": true
+        },
+        "Architecture": "amd64",
+        "Os": "linux",
+        "Size": 396281142,
+        "RootFS": {
+            "Type": "layers",
+            "Layers": [
+                "sha256:74635040b5e7967efb2c8c4a362e7dd1316232c28e9e22a60f112b738d20cca1",
+                "sha256:647680bb0f838b46d0226a6ea905d4becdbf74cf893faa5f7cd181000d4f4ce5",
+                "sha256:ac6ecae39554e7ff2b025b262b7238df37f645816544d9946989c21365d08794",
+                "sha256:3f704b66b354b59a93a756494037051bcaaf2898663c92903c2b5e588ca5ef2f",
+                "sha256:83fb2b1e9d72bc6e4af0628dfbe4a362787433ca4fda84fb96f69f71b03983c5",
+                "sha256:69f272afce484b67fff17d25edb08e2c00025502238caa200a30cfd4551c30d6",
+                "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+            ]
+        },
+        "Metadata": {
+            "LastTagTime": "2026-10-29T21:32:53.696370001Z"
+        },
+        "Descriptor": {
+            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+            "digest": "sha256:47956b669bf486bdad919e1cbd0533223515aa0b6d1d31763e5a3754942df6d7",
+            "size": 1787
+        },
+        "Identity": {
+            "Pull": [
+                {
+                    "Repository": "docker.io/sonarsource/sonar-scanner-cli"
+                }
+            ]
+        }
+    }
+]

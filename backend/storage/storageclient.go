@@ -11,6 +11,7 @@ import (
 
 	"github.com/DiegoMunevar2007/Proyecto-1-Cloud.git/utils"
 	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/cors"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/lifecycle"
 )
@@ -87,6 +88,15 @@ func NewClient() (*Client, error) {
 		if !exists {
 			if err := mc.MakeBucket(ctx, b, minio.MakeBucketOptions{Region: region}); err != nil {
 				return nil, err
+			}
+		}
+	}
+	// Solo desarrollo: GCP configura CORS por Terraform, no desde cada réplica.
+	if origins := utils.GetEnv("S3_LOCAL_CORS_ORIGINS", ""); origins != "" {
+		config := cors.NewConfig([]cors.Rule{{AllowedOrigin: strings.Split(origins, ","), AllowedMethod: []string{"GET", "HEAD", "PUT"}, AllowedHeader: []string{"*"}, ExposeHeader: []string{"ETag", "Content-Length", "Content-Range"}, MaxAgeSeconds: 3600}})
+		for _, bucket := range []string{BucketOriginals, BucketHLS, BucketPublic} {
+			if err := mc.SetBucketCors(ctx, bucket, config); err != nil {
+				return nil, fmt.Errorf("CORS local %s: %w", bucket, err)
 			}
 		}
 	}

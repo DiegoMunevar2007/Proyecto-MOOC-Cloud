@@ -1,0 +1,11 @@
+flowchart LR
+  Usuario[Navegador: estudiante o profesor] --> Frontend[React SPA / nginx]
+  Frontend -->|HTTPS /api| API[API Go: auth, cursos, matrícula, quiz, progreso]
+  API -->|sesiones y tareas asynq| Redis[Redis compartido]
+  Redis --> Worker[Workers Go / ffmpeg]
+  API --> DB[(PostgreSQL administrado)]
+  Worker --> DB
+  API -->|URLs firmadas| GCS[(Almacenamiento de objetos)]
+  Usuario -->|PUT original / GET contenido| GCS
+  Worker -->|originales y HLS| GCS
+  Worker --> ClamAV[ClamAV]

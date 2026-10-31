@@ -70,6 +70,18 @@
                 },
                 "type": "object"
             },
+            "admin.QueueStatsResponse": {
+                "properties": {
+                    "queues": {
+                        "items": {
+                            "$ref": "#/components/schemas/queue.QueueStats"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    }
+                },
+                "type": "object"
+            },
             "admin.RevokeSessionsResponse": {
                 "properties": {
                     "count": {
@@ -1104,6 +1116,71 @@
                 },
                 "type": "object"
             },
+            "queue.QueueStats": {
+                "properties": {
+                    "active": {
+                        "type": "integer"
+                    },
+                    "age_oldest_pending_sec": {
+                        "description": "AgeOldestPendingSec es la antigüedad del trabajo pendiente más viejo: la\nmedida directa de si los workers dan abasto a la tasa de entrada.",
+                        "type": "number"
+                    },
+                    "aggregating": {
+                        "type": "integer"
+                    },
+                    "archived": {
+                        "type": "integer"
+                    },
+                    "completed": {
+                        "type": "integer"
+                    },
+                    "exists": {
+                        "type": "boolean"
+                    },
+                    "failed_today": {
+                        "type": "integer"
+                    },
+                    "failed_total": {
+                        "type": "integer"
+                    },
+                    "groups": {
+                        "type": "integer"
+                    },
+                    "memory_usage_bytes": {
+                        "description": "MemoryUsageBytes es el uso aproximado de Redis de la cola y sus trabajos.",
+                        "type": "integer"
+                    },
+                    "observed_at": {
+                        "type": "string"
+                    },
+                    "paused": {
+                        "type": "boolean"
+                    },
+                    "pending": {
+                        "type": "integer"
+                    },
+                    "processed_today": {
+                        "description": "Processed y Failed reinician a medianoche; los *Total son acumulados desde\nque existe la cola. Se exponen ambos para no leer un contador diario como\nsi fuera histórico.",
+                        "type": "integer"
+                    },
+                    "processed_total": {
+                        "type": "integer"
+                    },
+                    "queue": {
+                        "type": "string"
+                    },
+                    "retry": {
+                        "type": "integer"
+                    },
+                    "scheduled": {
+                        "type": "integer"
+                    },
+                    "size": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "quiz.AddQuestionsRequest": {
                 "properties": {
                     "questions": {
@@ -1360,6 +1437,21 @@
                 },
                 "type": "object"
             },
+            "quiz.ResourceQuizResponse": {
+                "properties": {
+                    "attempts": {
+                        "items": {
+                            "$ref": "#/components/schemas/quiz.AttemptResponse"
+                        },
+                        "type": "array",
+                        "uniqueItems": false
+                    },
+                    "quiz": {
+                        "$ref": "#/components/schemas/quiz.Quiz"
+                    }
+                },
+                "type": "object"
+            },
             "quiz.StudentQuestion": {
                 "properties": {
                     "choices": {
@@ -1524,6 +1616,73 @@
                     }
                 ],
                 "summary": "Listar auditoría",
+                "tags": [
+                    "Administración"
+                ]
+            }
+        },
+        "/api/v1/admin/queue": {
+            "get": {
+                "description": "Instantánea de la cola asynq leída desde Redis: trabajos pendientes, en ejecución, programados, en reintento y archivados (DLQ), antigüedad del pendiente más viejo y totales procesados y fallidos. Si la cola aún no existe responde con exists=false y todos los contadores en cero.",
+                "parameters": [
+                    {
+                        "description": "Bearer \u003ctoken de admin\u003e",
+                        "in": "header",
+                        "name": "Authorization",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/admin.QueueStatsResponse"
+                                }
+                            }
+                        },
+                        "description": "Estado de la cola"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/utils.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "No autenticado"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/utils.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Se requiere rol admin"
+                    },
+                    "500": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/utils.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "No se pudo leer la cola"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Estado de la cola de trabajos",
                 "tags": [
                     "Administración"
                 ]
@@ -2671,10 +2830,10 @@
         },
         "/api/v1/auth/register": {
             "post": {
-                "description": "Registra un estudiante o administrador de forma pública. Crear un profesor requiere el token de un administrador.",
+                "description": "Registra estudiantes de forma pública. Crear profesores o administradores requiere el token de un administrador.",
                 "parameters": [
                     {
-                        "description": "Bearer \u003ctoken\u003e (obligatorio solo para rol professor)",
+                        "description": "Bearer \u003ctoken\u003e (obligatorio para professor o admin)",
                         "in": "header",
                         "name": "Authorization",
                         "schema": {
@@ -3309,6 +3468,31 @@
                     }
                 ],
                 "summary": "Crear curso",
+                "tags": [
+                    "Cursos"
+                ]
+            }
+        },
+        "/api/v1/courses/mine": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/courses.CoursesResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Cursos propios, incluidos borradores",
                 "tags": [
                     "Cursos"
                 ]
@@ -4327,6 +4511,55 @@
                 "summary": "Reinscribirse",
                 "tags": [
                     "Inscripción"
+                ]
+            }
+        },
+        "/api/v1/modules/{id}": {
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Módulo",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/courses.CreateModuleRequest",
+                                "summary": "body",
+                                "description": "Metadatos"
+                            }
+                        }
+                    },
+                    "description": "Metadatos",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/courses.ModuleEnvelope"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Editar módulo",
+                "tags": [
+                    "Cursos"
                 ]
             }
         },
@@ -5461,6 +5694,80 @@
                     "Cursos"
                 ]
             },
+            "get": {
+                "description": "Devuelve el recurso con su estado (scan_status, processing_status, hls_key, object_key) tras verificar acceso: autor o admin, o bien curso publicado con recurso visible e inscripción activa. Es la vía para seguir una carga sin releer el árbol completo del curso.",
+                "parameters": [
+                    {
+                        "description": "Bearer \u003ctoken\u003e",
+                        "in": "header",
+                        "name": "Authorization",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "ID del recurso",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/courses.ResourceEnvelope"
+                                }
+                            }
+                        },
+                        "description": "Recurso encontrado"
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/utils.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "ID inválido"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/utils.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Sin derecho de acceso"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/utils.ErrorResponse"
+                                }
+                            }
+                        },
+                        "description": "Recurso no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Consulta de un recurso",
+                "tags": [
+                    "Cursos"
+                ]
+            },
             "put": {
                 "description": "Actualiza los campos indicados; los no enviados conservan su valor. Solo en versión borrador.",
                 "parameters": [
@@ -5561,7 +5868,7 @@
         },
         "/api/v1/resources/{id}/download-url": {
             "get": {
-                "description": "Verifica propiedad o inscripción y curso publicado con recurso visible. Si hay HLS listo retorna su URL pública; si no, una URL firmada de 15 min.",
+                "description": "Verifica propiedad o inscripción y curso publicado con recurso visible. Si hay HLS listo retorna su URL pública; si no, una URL firmada de 15 min. Devuelve 404 si el recurso no tiene archivo asociado, que es el caso de los recursos de texto, PDF o quiz.",
                 "parameters": [
                     {
                         "description": "Bearer \u003ctoken\u003e",
@@ -5622,6 +5929,42 @@
                 "summary": "URL de descarga",
                 "tags": [
                     "Cursos"
+                ]
+            }
+        },
+        "/api/v1/resources/{id}/quiz": {
+            "get": {
+                "parameters": [
+                    {
+                        "description": "Recurso",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/quiz.ResourceQuizResponse"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Quiz asociado a un recurso",
+                "tags": [
+                    "Quizzes"
                 ]
             }
         },
@@ -5717,6 +6060,55 @@
                     }
                 ],
                 "summary": "URL de subida",
+                "tags": [
+                    "Cursos"
+                ]
+            }
+        },
+        "/api/v1/units/{id}": {
+            "put": {
+                "parameters": [
+                    {
+                        "description": "Unidad",
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/courses.CreateUnitRequest",
+                                "summary": "body",
+                                "description": "Metadatos"
+                            }
+                        }
+                    },
+                    "description": "Metadatos",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/courses.UnitEnvelope"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "summary": "Editar unidad",
                 "tags": [
                     "Cursos"
                 ]

@@ -80,70 +80,33 @@ locals {
     hls       = google_storage_bucket.hls.name
     public    = google_storage_bucket.public.name
   }
+
+  # Solo la API (TUS, URLs firmadas) y los workers (escaneo y HLS) tocan los
+  # buckets. objectAdmin para leer y escribir objetos, legacyBucketReader para
+  # el ListBucket que hace la interfaz S3.
+  storage_roles = ["api", "worker"]
+  storage_bindings = merge([
+    for role in local.storage_roles : merge([
+      for bucket_key, bucket in local.app_buckets : {
+        for bucket_role in ["roles/storage.objectAdmin", "roles/storage.legacyBucketReader"] :
+        "${role}/${bucket_key}/${bucket_role}" => { role = role, bucket = bucket, bucket_role = bucket_role }
+      }
+    ]...)
+  ]...)
 }
 
-resource "google_storage_bucket_iam_member" "app_object_admin" {
-  for_each = local.app_buckets
+resource "google_storage_bucket_iam_member" "role" {
+  for_each = local.storage_bindings
 
-  bucket = each.value
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${google_service_account.app.email}"
+  bucket = each.value.bucket
+  role   = each.value.bucket_role
+  member = google_service_account.role[each.value.role].member
 }
 
-resource "google_storage_bucket_iam_member" "app_bucket_reader" {
-  for_each = local.app_buckets
+# Claves HMAC (interoperabilidad S3), una por rol que usa los buckets.
+resource "google_storage_hmac_key" "role" {
+  for_each = toset(local.storage_roles)
 
-  bucket = each.value
-  role   = "roles/storage.legacyBucketReader"
-  member = "serviceAccount:${google_service_account.app.email}"
-}
-
-# Claves HMAC (interoperabilidad S3) para que API y workers firmen URLs.
-resource "google_storage_hmac_key" "app" {
-  service_account_email = google_service_account.app.email
+  service_account_email = google_service_account.role[each.value].email
   project               = var.project_id
-}
-
-resource "google_secret_manager_secret" "s3_access" {
-  secret_id = local.secret_s3_access
-
-  replication {
-    auto {}
-  }
-
-  depends_on = [google_project_service.enabled]
-}
-
-resource "google_secret_manager_secret_version" "s3_access" {
-  secret      = google_secret_manager_secret.s3_access.id
-  secret_data = google_storage_hmac_key.app.access_id
-}
-
-resource "google_secret_manager_secret" "s3_secret" {
-  secret_id = local.secret_s3_secret
-
-  replication {
-    auto {}
-  }
-
-  depends_on = [google_project_service.enabled]
-}
-
-resource "google_secret_manager_secret_version" "s3_secret" {
-  secret      = google_secret_manager_secret.s3_secret.id
-  secret_data = google_storage_hmac_key.app.secret
-}
-
-resource "google_secret_manager_secret_iam_member" "s3_access" {
-  project   = var.project_id
-  secret_id = google_secret_manager_secret.s3_access.id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.app.email}"
-}
-
-resource "google_secret_manager_secret_iam_member" "s3_secret" {
-  project   = var.project_id
-  secret_id = google_secret_manager_secret.s3_secret.id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.app.email}"
 }

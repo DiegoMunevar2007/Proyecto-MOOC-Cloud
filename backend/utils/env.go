@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"log"
 	"os"
+	"strconv"
+	"time"
 )
 
 // GetEnv obtiene el valor de una variable de entorno. Si no está definida, devuelve el valor por defecto.
@@ -11,6 +14,56 @@ func GetEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// GetEnvInt lee un entero positivo del entorno. Un valor vacío, que no sea un
+// número o que no sea mayor que cero devuelve el valor por defecto: un pool de
+// cero conexiones o una concurrencia negativa nunca es lo que se quiso decir.
+func GetEnvInt(key string, defaultValue int) int {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return defaultValue
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value <= 0 {
+		log.Printf("advertencia: %s=%q no es un entero positivo; se usa %d", key, raw, defaultValue)
+		return defaultValue
+	}
+	return value
+}
+
+// GetEnvDuration lee una duración del entorno. Acepta el formato de Go ("25s",
+// "1m30s") y también un entero, que se interpreta en segundos, porque es lo que
+// se escribe a mano en un .env. Un valor inválido o no positivo devuelve el
+// valor por defecto.
+func GetEnvDuration(key string, defaultValue time.Duration) time.Duration {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return defaultValue
+	}
+	if seconds, err := strconv.Atoi(raw); err == nil {
+		if seconds > 0 {
+			return time.Duration(seconds) * time.Second
+		}
+	} else if value, err := time.ParseDuration(raw); err == nil && value > 0 {
+		return value
+	}
+	log.Printf("advertencia: %s=%q no es una duración positiva; se usa %s", key, raw, defaultValue)
+	return defaultValue
+}
+
+// InstanceName identifica la réplica que atiende una petición o un trabajo.
+// En las VM la fija el arranque con el nombre de la instancia (INSTANCE_NAME);
+// dentro de un contenedor sin esa variable, el hostname es el id del contenedor,
+// que sigue sirviendo para distinguir réplicas en local.
+func InstanceName() string {
+	if name := os.Getenv("INSTANCE_NAME"); name != "" {
+		return name
+	}
+	if host, err := os.Hostname(); err == nil && host != "" {
+		return host
+	}
+	return "unknown"
 }
 
 func GetPostgresDSN() string {

@@ -1,0 +1,36 @@
+# Desarrollo local: docker compose -p mooc-local -f docker-compose.yml -f compose.dev.yml up -d --build
+# No usar este override para desplegar en GCP.
+services:
+  postgres:
+    ports: !override ["127.0.0.1:15439:5432"]
+  redis:
+    ports: !override ["127.0.0.1:16379:6379"]
+  s3:
+    ports: !override ["127.0.0.1:19000:9000", "127.0.0.1:19001:9001"]
+  mailpit:
+    ports: !override ["127.0.0.1:18025:8025"]
+  backend:
+    ports: !reset []
+    environment:
+      S3_PUBLIC_ENDPOINT: http://localhost:19000
+      S3_LOCAL_CORS_ORIGINS: http://localhost:5180,http://mooc.localhost:5180
+  worker:
+    depends_on:
+      clamav:
+        condition: service_healthy
+    ports: !reset []
+    environment:
+      S3_PUBLIC_ENDPOINT: http://localhost:19000
+      WORKER_CONCURRENCY: 4
+  frontend:
+    image: node:24-alpine
+    working_dir: /app
+    environment:
+      API_URL: http://backend:8080
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm dev --host 0.0.0.0 --port 5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports: ["127.0.0.1:5180:5173"]
+    depends_on: [backend]
